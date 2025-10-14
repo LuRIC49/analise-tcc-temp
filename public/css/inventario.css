@@ -1,0 +1,149 @@
+/* --- ESTRUTURA PRINCIPAL (CONTÊINER BRANCO) --- */
+.main-content {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px 30px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 95%; /* Garante fluidez em telas menores */
+    box-sizing: border-box;
+}
+
+/* --- TÍTULO "FILIAIS CADASTRADAS" --- */
+.companies-title {
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    margin: 0 auto 30px auto;
+    font-size: 1.8em;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+/* --- BOTÃO 'CADASTRAR NOVA FILIAL' --- */
+.page-actions {
+    margin-bottom: 30px;
+}
+
+.page-actions .btn-new-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    min-height: 30px;
+    background: #28a745;
+    color: white;
+    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 5px;
+    text-decoration: none;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+.page-actions .btn-new-item:hover {
+    background-color: #218838;
+}
+
+/* --- GRID E CARDS DAS FILIAIS --- */
+.companies-grid {
+    display: grid;
+    gap: 25px;
+    grid-template-columns: 1fr; /* Padrão Mobile: 1 coluna */
+}
+
+/* Card individual da filial */
+.company-card {
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.card-text-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.institution-name {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.company-cnpj, .company-address {
+    font-size: 1em;
+    color: #555;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+}
+
+.card-contact-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ccc;
+}
+
+.company-email {
+    display: block;
+    background-color: #28a745;
+    color: white;
+    padding: 5px 12px;
+    margin: 0 auto 15px auto;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    width: fit-content;
+}
+
+.btn-access-info {
+    display: block;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.btn-access-info:hover {
+    background-color: #21883c;
+}
+
+/* --- RESPONSIVIDADE DA GRADE --- */
+@media (min-width: 600px) {
+    .companies-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 992px) {
+    .companies-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Apenas para telas de desktop, aplicamos a largura mínima */
+@media (min-width: 1200px) {
+    .main-content {
+        min-width: 1200px;
+    }
+    .companies-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}

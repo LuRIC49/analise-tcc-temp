@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vistorias da Filial</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/inventario.css"> 
+    <link rel="stylesheet" href="css/vistorias.css"> 
+</head>
+<body>
+    <header class="header"></header>
+
+    <main class="main-content">
+        <div class="outer-white-container">
+            <div class="inner-grey-container">
+
+                <section id="vistorias-section">
+                    <div class="page-header">
+                        <h1 class="companies-title" id="vistorias-title">Vistorias</h1>
+                    <div class="actions-header">
+                        <div class="filter-container">
+                            <label for="filtro-vistorias">Visualizar por:</label>
+                            <select id="filtro-vistorias" class="filter-select">
+                                <option value="recentes">Início mais recente</option>
+                                <option value="antigas">Início mais antigo</option>
+                                <option value="finalizadas">Vistorias Finalizadas</option>
+                                <option value="andamento">Vistorias em Andamento</option>
+                            </select>
+                        </div>
+                        <div class="page-actions">
+                            <a href="#" id="btnIniciarVistoria" class="btn-new-item">Criar Nova Vistoria</a>
+                        </div>
+                    </div>
+                    </div>
+                    
+                    <div class="vistorias-list" id="vistorias-list">
+                        <p>Carregando vistorias...</p>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer"></footer>
+
+    <script src="js/layout.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/vistorias.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+/* --- CABEÇALHO DE AÇÕES (FILTRO E BOTÃO) --- */
+.actions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-container label {
+    font-weight: bold;
+    color: #555;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    background-color: #fff;
+}
+
+/* --- LAYOUT DA GRADE DE VISTORIAS --- */
+.vistorias-list {
+    display: grid;
+    gap: 25px;
+    grid-template-columns: 1fr;
+}
+
+/* --- ESTILO DO CARD DE VISTORIA --- */
+.vistoria-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.vistoria-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.vistoria-card-header {
+    background-color: #f8f8f8;
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.vistoria-card-header h4 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.vistoria-card-body {
+    padding: 20px;
+    flex-grow: 1;
+    text-align: left;
+}
+
+.vistoria-card-body p {
+    margin: 0 0 10px 0;
+    color: #555;
+    line-height: 1.6;
+}
+
+.vistoria-card-footer {
+    padding: 20px;
+    text-align: center;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* --- RESPONSIVIDADE --- */
+@media (min-width: 768px) {
+    .vistorias-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 1200px) {
+    .vistorias-list {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+@media (max-width: 768px) {
+    .actions-header {
+        flex-direction: column;
+    }
+    .filter-container, .page-actions, .page-actions .btn-new-item {
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+}

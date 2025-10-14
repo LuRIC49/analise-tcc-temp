@@ -1,0 +1,32 @@
+body { font-family: 'Roboto', sans-serif; margin: 0; padding: 0; background-color: #f0f0f0; color: #333; }
+
+.main-content { display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; box-sizing: border-box; }
+
+.login-container { background-color: #fff; padding: 30px 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); width: 100%; max-width: 480px; text-align: center; }
+
+.login-container h2 { margin-top: 0; margin-bottom: 30px; font-size: 2em; }
+
+.form-group { margin-bottom: 20px; text-align: left; }
+.form-group input { width: 100%; padding: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; box-sizing: border-box; }
+.password-group { position: relative; }
+.password-group input { padding-right: 50px; }
+.password-toggle-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; width: 24px; }
+
+.login-button { background-color: #4CAF50; color: white; padding: 12px 30px; border: none; border-radius: 5px; font-size: 1.2em; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+
+.forgot-password { display: block; margin-top: 15px; color: #007bff; font-size: 0.9em; }
+
+.field-error-message { color: #f44336; font-size: 0.85em; margin-top: 5px; display: none; }
+.form-group input.invalid { border-color: #f44336; }
+
+/* Notificações */
+.notification-message { position: fixed; z-index: 1000; padding: 15px 25px; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); display: none; }
+.notification-message.success { background-color: #4CAF50; }
+.notification-message.error { background-color: #f44336; }
+
+/* --- Media Queries --- */
+@media (max-width: 480px) {
+    .login-container { padding: 20px; }
+    .login-container h2 { font-size: 1.5em; }
+    .form-group input { padding: 12px; }
+}

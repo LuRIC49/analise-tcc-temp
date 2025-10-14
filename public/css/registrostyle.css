@@ -1,0 +1,29 @@
+body { font-family: 'Roboto', sans-serif; margin: 0; padding: 0; background-color: #f0f0f0; color: #333; }
+
+.main-content { display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+
+.form-container { background-color: #fff; padding: 30px 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); width: 100%; max-width: 500px; text-align: center; }
+.form-container h2 { margin-top: 0; margin-bottom: 30px; font-size: 2em; }
+
+.form-group { margin-bottom: 15px; text-align: left; }
+.form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; box-sizing: border-box; }
+
+.submit-button, .add-field-button, .remove-field-button { color: white; padding: 12px 25px; border: none; border-radius: 5px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
+.submit-button { background-color: #32CD32; }
+.add-field-button { background-color: #007bff; }
+.remove-field-button { background-color: #dc3545; }
+
+.address-set { border: 1px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px; }
+.error-message { color: #f44336; font-size: 0.85em; margin-top: 5px; display: none; }
+.form-group input.invalid { border-color: #f44336; }
+
+/* Notificações */
+.notification-message { position: fixed; z-index: 1000; padding: 15px 25px; border-radius: 8px; color: white; text-align: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); display: none; }
+.notification-message.success { background-color: #4CAF50; }
+.notification-message.error { background-color: #f44336; }
+
+/* --- Media Queries --- */
+@media (max-width: 480px) {
+    .form-container { padding: 20px; }
+    .form-container h2 { font-size: 1.5em; }
+}

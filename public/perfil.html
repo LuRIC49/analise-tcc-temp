@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/perfilstyle.css">
+    <link rel="stylesheet" href="css/style.css"> 
+    <link rel="stylesheet" href="css/modalstyle.css">
+</head>
+<body>
+    <header class="header">
+    </header>
+
+    <main class="main-content-perfil">
+        <h1>Meu Perfil</h1>
+
+        <div class="profile-container">
+            <div class="info-card">
+                <h2>Informações da Conta</h2>
+                <p><strong>Nome:</strong> <span id="profile-name">Carregando...</span></p>
+                <p><strong>CPF/CNPJ:</strong> <span id="profile-cpf-cnpj">Carregando...</span></p>
+                <p><strong>E-mail:</strong> <span id="profile-email">Carregando...</span></p>
+            </div>
+
+            <div class="actions-card">
+                <h2>Ações</h2>
+                <button class="action-btn action-btn-email">Alterar E-mail</button>
+                <button class="action-btn action-btn-senha">Alterar Senha</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="editProfileModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h2 id="modalTitle">Alterar Informação</h2>
+        <form id="modalForm">
+            <div id="formInputsContainer"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel">Cancelar</button>
+                <button type="submit" class="btn-save">Salvar</button>
+            </div>
+        </form>
+        <button class="modal-close-btn">&times;</button>
+    </div>
+</div>
+
+    <footer class="footer">
+    </footer>
+
+    <script src="js/layout.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/perfil.js" defer></script>
+
+    </body>
+</html>

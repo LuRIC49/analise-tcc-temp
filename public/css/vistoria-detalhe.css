@@ -1,0 +1,84 @@
+/* --- SEÇÃO DE DETALHES DA VISTORIA (TOPO) --- */
+#vistoria-details-section {
+    padding-bottom: 20px;
+    text-align: center;
+}
+
+#vistoria-title {
+    color: #333;
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+.filial-info {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px 30px;
+    color: #555;
+}
+
+.filial-info p {
+    margin: 5px;
+    font-size: 1.1em;
+}
+
+/* --- SEÇÃO DE INSUMOS E BOTÕES DE AÇÃO --- */
+.section-title {
+    text-align: center;
+    font-size: 1.6em;
+    color: #333;
+    margin: 20px 0;
+}
+
+.action-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.btn-new-item {
+    background-color: #28a745 !important;
+    color: white;
+    padding: 12px 22px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    transition: background-color 0.2s;
+}
+.btn-new-item:hover {
+    background-color: #218838 !important;
+}
+
+.btn-finalizar {
+    background-color: #d32f2f;
+    color: white;
+    padding: 12px 22px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    transition: background-color 0.2s;
+}
+.btn-finalizar:hover {
+    background-color: #b71c1c;
+}
+
+/* --- LISTA DE INSUMOS --- */
+#insumos-section .products-section {
+    padding-top: 10px;
+    min-height: 100px;
+}
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+    #vistoria-title {
+        font-size: 1.6em;
+    }
+    .btn-new-item, .btn-finalizar {
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+        padding: 15px; /* Aumenta a área de toque no mobile */
+    }
+}

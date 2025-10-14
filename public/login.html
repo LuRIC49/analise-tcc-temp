@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css"> 
+  <link rel="stylesheet" href="css/modalstyle.css">
+  <link rel="stylesheet" href="css/loginstyle.css"> 
+</head>
+<body>
+  <header class="header">
+  </header>
+
+  <main class="main-content">
+    <div class="login-container"> 
+      <h2>Login</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <input type="text" id="cpfcnpj" name="cpfcnpj" placeholder="CNPJ da EMPRESA:">
+                    <div class="field-error-message"></div>         </div>
+        <div class="form-group password-group">
+          <input type="password" id="senhalogin" name="senhalogin" placeholder="SENHA:">
+                    <img src="images/Olho coberto.png" alt ="Mostrar Senha" id="togglePassword" class="password-toggle-icon">
+                    <div class="field-error-message"></div>         </div>
+        <button type="submit" class="login-button">Logar</button>
+        <a href="esqueceusenha.html" class="forgot-password">Esqueceu a senha?</a>
+      </form>
+    </div>
+  </main>
+
+  <footer class="footer">
+  </footer>
+  
+      <script src="js/layout.js" defer></script>
+      <script src="js/auth.js" defer></script>
+      <script src="js/login.js"></script>
+</body>
+</html>

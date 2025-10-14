@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Vistoria</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/modalstyle.css">
+    <link rel="stylesheet" href="css/insumostyle.css">
+    <link rel="stylesheet" href="css/inventario.css">
+    <link rel="stylesheet" href="css/vistoria-detalhe.css">
+</head>
+<body>
+    <header class="header"></header>
+
+    <main class="main-content">
+        <div class="outer-white-container">
+            <div class="inner-grey-container">
+
+                <section id="vistoria-details-section">
+                    <h1 id="vistoria-title">Carregando Vistoria...</h1>
+                    <div id="vistoria-info" class="filial-info"></div>
+                </section>
+                
+                <hr style="margin: 30px 0;">
+
+<section id="insumos-section">
+    
+    <h2 class="section-title">Insumos Registrados</h2>
+
+    <div class="action-container">
+        <a href="#" id="btnAdicionarInsumo" class="btn-new-item">Adicionar Insumo</a>
+    </div>
+    
+    <div class="products-section" id="insumos-vistoria-grid">
+        <p>Nenhum insumo registrado nesta vistoria ainda.</p>
+    </div>
+
+    <div class="action-container" style="margin-top: 30px;">
+        <a href="#" id="btnFinalizarVistoria" class="btn-finalizar">Finalizar Vistoria</a>
+    </div>
+
+</section>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="selectionModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <h2 id="selectionModalTitle">Selecione o Tipo de Insumo</h2>
+            <main class="selection-grid"></main>
+            <div class="modal-actions"><button type="button" class="btn-cancel">Cancelar</button></div>
+            <button class="modal-close-btn">&times;</button>
+        </div>
+    </div>
+    <div id="detailsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2 id="detailsModalTitle">Detalhes do Insumo</h2>
+            <form id="detailsModalForm">
+                <div id="formInputsContainer"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel">Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar Insumo</button>
+                </div>
+            </form>
+            <button class="modal-close-btn">&times;</button>
+        </div>
+    </div>
+
+    <footer class="footer"></footer>
+
+    <script src="js/layout.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/vistoria-detalhe.js" defer></script>
+</body>
+</html>
