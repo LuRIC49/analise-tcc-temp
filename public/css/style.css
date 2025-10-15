@@ -100,12 +100,20 @@ main {
 
 .products-section {
     display: flex;
-    justify-content: center;
-    gap: 30px;
-    padding: 20px;
+    justify-content: flex-start; /* Alinha os cards à esquerda para um visual mais organizado */
+    gap: 20px;
+    padding: 20px 0;
+    flex-wrap: wrap;
+}
+.products-section {
+    display: flex;
+    justify-content: flex-start;
+    gap: 20px;
+    padding: 20px 0;
     flex-wrap: wrap;
 }
 
+/* Estilo base do card */
 .product-card {
     background-color: #ffffff;
     border: 1px solid #ddd;
@@ -114,13 +122,31 @@ main {
     text-align: center;
     padding: 20px;
     width: 250px;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
 }
 
+/* CORREÇÃO: Status OK (Verde) - Fundo branco com borda sutil */
+.product-card.status-ok {
+    border-color: #28a745;
+}
+
+/* CORREÇÃO: Status de Alerta (Amarelo) - Fundo amarelo claro */
+.product-card.status-warning {
+    background-color: #fffbeb; /* Fundo amarelo claro */
+    border-color: #ffc107; /* Borda amarela */
+}
+
+/* CORREÇÃO: Status Vencido (Vermelho) - Fundo vermelho claro */
+.product-card.status-expired {
+    background-color: #fff5f5; /* Fundo vermelho claro */
+    border-color: #dc3545; /* Borda vermelha */
+}
+
 .product-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
 .product-card img {
@@ -133,11 +159,12 @@ main {
 .product-card h3 {
     margin: 10px 0;
     font-size: 1.2em;
+    color: #333;
 }
 
 .product-card p {
     color: #666;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     flex-grow: 1;
 }
 

@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function carregarInsumosGerais() {
         insumosGridDiv.innerHTML = '<p>Carregando insumos...</p>';
         try {
-            const response = await fetch(`/api/filiais/${filialCnpj}/inventario`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const response = await fetch(`/api/insumos/filial/${filialCnpj}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Falha ao carregar os insumos.');
 
             const inventario = await response.json();
@@ -65,16 +65,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function createInsumoCard(item) {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.innerHTML = `
-            <img src="${item.imagem || 'images/logotipo.png'}" alt="${item.descricao}">
-            <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
-            <p><strong>Válido até:</strong> ${item.validade ? new Date(item.validade).toLocaleDateString() : 'N/A'}</p>
-        `;
-        return card;
+function createInsumoCard(item) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+
+    let statusClass = 'status-ok';
+
+    if (item.validade) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const dataValidade = new Date(item.validade.replace(/-/g, '/'));
+
+        const diffTime = dataValidade - hoje;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) {
+            statusClass = 'status-expired'; // Vermelho
+        } else if (diffDays <= 30) {
+            statusClass = 'status-warning'; // Amarelo
+        }
     }
+
+    card.classList.add(statusClass);
+
+    card.innerHTML = `
+        <img src="${item.imagem || 'images/logotipo.png'}" alt="${item.descricao}">
+        <h3>${item.descricao}</h3>
+        <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
+        <p><strong>Válido até:</strong> ${item.validade ? new Date(item.validade.replace(/-/g, '/')).toLocaleDateString() : 'N/A'}</p>
+    `;
+    return card;
+}
 
     carregarDetalhesFilial();
     carregarInsumosGerais();

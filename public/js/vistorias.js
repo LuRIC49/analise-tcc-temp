@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function carregarVistorias() {
         vistoriasListDiv.innerHTML = '<p>Carregando vistorias...</p>';
         try {
-            const response = await fetch(`/api/filiais/${filialCnpj}/vistorias`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const response = await fetch(`/api/vistorias/filial/${filialCnpj}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Falha ao carregar vistorias.');
             
             todasAsVistorias = await response.json();
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(`/api/filiais/${filialCnpj}/vistorias`, {
+            const response = await fetch(`/api/vistorias/filial/${filialCnpj}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

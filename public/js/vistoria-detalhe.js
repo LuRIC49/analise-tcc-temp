@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAdicionarInsumo.addEventListener('click', async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/insumos', { headers: { 'Authorization': `Bearer ${token}` } });
+            const response = await fetch('/api/insumos/tipos', { headers: { 'Authorization': `Bearer ${token}` } });
             const tiposDeInsumo = await response.json();
             
             const gridContainer = selectionModal.querySelector('.selection-grid');

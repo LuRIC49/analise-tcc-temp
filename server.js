@@ -4,7 +4,10 @@ const cors = require('cors');
 const multer = require('multer');
 const mainPool = require('./db');
 const authRoutes = require('./routes/authRoutes');
-const inventarioRoutes = require('./routes/inventarioRoutes');
+const filialRoutes = require('./routes/filialRoutes');
+const vistoriaRoutes = require('./routes/vistoriaRoutes');
+const insumoRoutes = require('./routes/insumoRoutes');
+//const inventarioRoutes = require('./routes/inventarioRoutes');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -15,7 +18,10 @@ app.use(express.json());
 app.use(express.static('public'));
 
 app.use('/api/auth', authRoutes);
-app.use('/api', inventarioRoutes);
+//app.use('/api', inventarioRoutes);
+app.use('/api/filiais', filialRoutes);
+app.use('/api/vistorias', vistoriaRoutes);
+app.use('/api/insumos', insumoRoutes);
 
 
 async function initializeDatabase() {
