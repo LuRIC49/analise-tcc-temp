@@ -65,6 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
+
+
+
+
+
+    
+
 function createInsumoCard(item) {
     const card = document.createElement('div');
     card.className = 'product-card';
@@ -74,8 +82,7 @@ function createInsumoCard(item) {
     if (item.validade) {
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
-
-        const dataValidade = new Date(item.validade.replace(/-/g, '/'));
+        const dataValidade = new Date(item.validade + 'T00:00:00Z');
 
         const diffTime = dataValidade - hoje;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -93,7 +100,7 @@ function createInsumoCard(item) {
         <img src="${item.imagem || 'images/logotipo.png'}" alt="${item.descricao}">
         <h3>${item.descricao}</h3>
         <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
-        <p><strong>Válido até:</strong> ${item.validade ? new Date(item.validade.replace(/-/g, '/')).toLocaleDateString() : 'N/A'}</p>
+        <p><strong>Válido até:</strong> ${item.validade ? new Date(item.validade + 'T00:00:00Z').toLocaleDateString() : 'N/A'}</p>
     `;
     return card;
 }
