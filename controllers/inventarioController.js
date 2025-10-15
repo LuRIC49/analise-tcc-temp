@@ -1,14 +1,13 @@
-// Importa os models que farão o trabalho com o banco de dados
 const Filial = require('../models/filialModel');
 const Vistoria = require('../models/vistoriaModel');
 const { Insumo, InsumoFilial } = require('../models/insumoModel');
 
 // --- CONTROLLERS PARA FILIAIS ---
-
 exports.listarFiliais = async (req, res) => {
     try {
-        const { cnpj: empresa_cnpj } = req.user;
-        const filiais = await Filial.findByEmpresa(empresa_cnpj);
+        // Garante que estamos usando a variável padronizada 'empresaCnpj'
+        const { empresaCnpj } = req.user; 
+        const filiais = await Filial.findByEmpresa(empresaCnpj);
         res.json(filiais);
     } catch (error) {
         console.error('Erro ao listar filiais:', error);
@@ -18,8 +17,8 @@ exports.listarFiliais = async (req, res) => {
 
 exports.criarFilial = async (req, res) => {
     try {
-        const { cnpj: empresa_cnpj } = req.user;
-        await Filial.create(req.body, empresa_cnpj);
+        const { empresaCnpj } = req.user;
+        await Filial.create(req.body, empresaCnpj);
         res.status(201).json({ message: 'Filial cadastrada com sucesso!' });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
@@ -32,11 +31,11 @@ exports.criarFilial = async (req, res) => {
 
 exports.buscarDetalhesFilial = async (req, res) => {
     try {
-        const { cnpj: empresa_cnpj } = req.user;
-        const { cnpj: filial_cnpj } = req.params;
-        const filial = await Filial.findById(filial_cnpj, empresa_cnpj);
+        const { empresaCnpj } = req.user;
+        const { cnpj: filialCnpj } = req.params;
+        const filial = await Filial.findById(filialCnpj, empresaCnpj);
         if (!filial) {
-            return res.status(404).json({ message: 'Filial não encontrada ou não pertence à sua empresa.' });
+            return res.status(404).json({ message: 'Filial não encontrada ou você não tem permissão.' });
         }
         res.json(filial);
     } catch (error) {
@@ -46,16 +45,11 @@ exports.buscarDetalhesFilial = async (req, res) => {
 };
 
 // --- CONTROLLERS PARA VISTORIAS ---
-
 exports.listarVistorias = async (req, res) => {
     try {
-        const { cnpj: filial_cnpj } = req.params;
-        // Lógica de segurança: verificar se a filial pertence à empresa logada
-        const filial = await Filial.findById(filial_cnpj, req.user.cnpj);
-        if (!filial) {
-            return res.status(403).json({ message: 'Acesso negado.' });
-        }
-        const vistorias = await Vistoria.findByFilial(filial_cnpj);
+        // A autorização é garantida pelo middleware checkFilialOwnership
+        const { cnpj: filialCnpj } = req.params;
+        const vistorias = await Vistoria.findByFilial(filialCnpj);
         res.json(vistorias);
     } catch (error) {
         console.error('Erro ao listar vistorias:', error);
@@ -65,21 +59,13 @@ exports.listarVistorias = async (req, res) => {
 
 exports.iniciarNovaVistoria = async (req, res) => {
     try {
-        const { cnpj: filial_cnpj } = req.params;
+        const { cnpj: filialCnpj } = req.params;
         const { tecnico_responsavel } = req.body;
-
         if (!tecnico_responsavel) {
             return res.status(400).json({ message: 'O nome do técnico responsável é obrigatório.' });
         }
-
-        const filial = await Filial.findById(filial_cnpj, req.user.cnpj);
-        if (!filial) {
-            return res.status(403).json({ message: 'Acesso negado.' });
-        }
-
-        const vistoriaId = await Vistoria.create({ filial_cnpj, tecnico_responsavel });
+        const vistoriaId = await Vistoria.create({ filial_cnpj: filialCnpj, tecnico_responsavel });
         res.status(201).json({ message: 'Nova vistoria iniciada com sucesso!', vistoriaId });
-
     } catch (error) {
         console.error('Erro ao iniciar nova vistoria:', error);
         res.status(500).json({ message: 'Erro interno do servidor.' });
@@ -89,10 +75,13 @@ exports.iniciarNovaVistoria = async (req, res) => {
 exports.finalizarVistoria = async (req, res) => {
     try {
         const { id } = req.params;
-        const vistoria = await Vistoria.findById(id);
+        const { empresaCnpj } = req.user;
+
+        // USA O MÉTODO SEGURO: Verifica a propriedade da vistoria antes de qualquer ação
+        const vistoria = await Vistoria.findByIdAndEmpresa(id, empresaCnpj);
 
         if (!vistoria) {
-            return res.status(404).json({ message: 'Vistoria не найдена.' });
+            return res.status(404).json({ message: 'Vistoria não encontrada ou você не tem permissão.' });
         }
         if (vistoria.data_fim) {
             return res.status(403).json({ message: 'Ação proibida. Esta vistoria já foi finalizada.' });
@@ -109,17 +98,14 @@ exports.finalizarVistoria = async (req, res) => {
 exports.excluirVistoria = async (req, res) => {
     try {
         const { id } = req.params;
-        const vistoria = await Vistoria.findById(id);
+        const { empresaCnpj } = req.user;
+
+        // USA O MÉTODO SEGURO: Garante que o usuário só possa excluir vistorias da sua própria empresa
+        const vistoria = await Vistoria.findByIdAndEmpresa(id, empresaCnpj);
 
         if (!vistoria) {
-            return res.status(404).json({ message: 'Vistoria não encontrada.' });
+            return res.status(404).json({ message: 'Vistoria não encontrada ou você não tem permissão para excluí-la.' });
         }
-        
-        const filial = await Filial.findById(vistoria.filial_cnpj, req.user.cnpj);
-        if (!filial) {
-            return res.status(403).json({ message: 'Acesso negado.' });
-        }
-
         if (vistoria.data_fim) {
             return res.status(403).json({ message: 'Ação proibida. Não é possível excluir uma vistoria finalizada.' });
         }
@@ -146,12 +132,9 @@ exports.listarTiposDeInsumos = async (req, res) => {
 
 exports.listarInventario = async (req, res) => {
     try {
-        const { cnpj: filial_cnpj } = req.params;
-        const filial = await Filial.findById(filial_cnpj, req.user.cnpj);
-        if (!filial) {
-            return res.status(403).json({ message: 'Acesso negado.' });
-        }
-        const inventario = await InsumoFilial.findByFilial(filial_cnpj);
+        // A autorização já é garantida pelo middleware checkFilialOwnership
+        const { cnpj: filialCnpj } = req.params;
+        const inventario = await InsumoFilial.findByFilial(filialCnpj);
         res.json(inventario);
     } catch (error) {
         console.error('Erro ao listar inventário:', error);
@@ -162,14 +145,15 @@ exports.listarInventario = async (req, res) => {
 exports.buscarDetalhesVistoria = async (req, res) => {
     try {
         const { id } = req.params;
-        const vistoria = await Vistoria.findById(id);
+        const { empresaCnpj } = req.user;
+
+        // USA O MÉTODO SEGURO: Garante que o usuário só possa ver detalhes de vistorias da sua empresa
+        const vistoria = await Vistoria.findByIdAndEmpresa(id, empresaCnpj);
+
         if (!vistoria) {
-            return res.status(404).json({ message: 'Vistoria não encontrada.' });
+            return res.status(404).json({ message: 'Vistoria não encontrada ou você не tem permissão para acessá-la.' });
         }
-        const filial = await Filial.findById(vistoria.filial_cnpj, req.user.cnpj);
-        if (!filial) {
-            return res.status(403).json({ message: 'Acesso negado.' });
-        }
+        
         const insumos = await InsumoFilial.findByVistoria(id);
         res.json({ detalhes: vistoria, insumos });
     } catch (error) {
@@ -181,23 +165,20 @@ exports.buscarDetalhesVistoria = async (req, res) => {
 exports.adicionarInsumoAVistoria = async (req, res) => {
     try {
         const { id: vistoria_codigo } = req.params;
-        const { filial_cnpj } = req.body;
+        const { empresaCnpj } = req.user;
+
+        // USA O MÉTODO SEGURO: Garante que o usuário só possa adicionar insumos a vistorias da sua empresa
+        const vistoria = await Vistoria.findByIdAndEmpresa(vistoria_codigo, empresaCnpj);
         
-        const vistoria = await Vistoria.findById(vistoria_codigo);
         if (!vistoria) {
-            return res.status(404).json({ message: 'Vistoria não encontrada.' });
+            return res.status(404).json({ message: 'Vistoria não encontrada ou você não tem permissão.' });
         }
         if (vistoria.data_fim) {
             return res.status(403).json({ message: 'Ação proibida. Vistoria já finalizada.' });
         }
 
-        const filial = await Filial.findById(filial_cnpj, req.user.cnpj);
-        if (!filial) {
-            return res.status(403).json({ message: 'Acesso negado.' });
-        }
-
         await InsumoFilial.create({
-            filial_cnpj,
+            filial_cnpj: vistoria.filial_cnpj, // Usa o CNPJ da vistoria encontrada para segurança
             vistoria_codigo,
             tipo_descricao: req.body.descricao,
             validade: req.body.validade,
@@ -212,9 +193,8 @@ exports.adicionarInsumoAVistoria = async (req, res) => {
     }
 };
 
+
+
 exports.excluirItemInventario = async (req, res) => {
-    // Implementação da exclusão de um insumo específico (insumo_filial)
-    // Requer verificações de segurança para garantir que o usuário tem permissão
-    // (verificar se o insumo pertence a uma vistoria/filial da empresa do usuário)
-    res.status(501).json({ message: 'Funcionalidade não implementada.' });
+    //falta fazer
 };

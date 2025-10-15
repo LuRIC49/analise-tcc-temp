@@ -1,6 +1,24 @@
 const db = require('../db');
 
 class Vistoria {
+
+    /**
+     * Busca uma vistoria pelo ID, mas garante que ela pertença a uma filial da empresa especificada.
+     * @param {number} id - O código da vistoria.
+     * @param {string} empresaCnpj - O CNPJ da empresa logada.
+     * @returns {Promise<object|null>} O objeto da vistoria se a verificação for bem-sucedida.
+     */
+    static async findByIdAndEmpresa(id, empresaCnpj) {
+        const query = `
+            SELECT v.* FROM vistoria AS v
+            JOIN filial AS f ON v.filial_cnpj = f.cnpj
+            WHERE v.codigo = ? AND f.empresa_cnpj = ?;
+        `;
+        const [rows] = await db.query(query, [id, empresaCnpj]);
+        return rows[0];
+    }
+
+
     /**
      * Busca uma vistoria pelo seu código (ID).
      * @param {number} id - O código da vistoria.

@@ -1,23 +1,14 @@
 const db = require('../db');
+const { parseDateAsLocal, formatDateForClient } = require('../utils/dateFormatter');
 
 class Insumo {
-    /**
-     * Lista todos os tipos de insumo base.
-     * @returns {Promise<Array>} Um array com os tipos de insumo.
-     */
     static async findAllTypes() {
         const [rows] = await db.query('SELECT codigo, descricao, imagem FROM insumo ORDER BY descricao ASC');
         return rows;
     }
 
-    /**
-     * Encontra ou cria um tipo de insumo base.
-     * @param {string} descricao - A descrição do tipo de insumo.
-     * @param {object} connection - Uma conexão ativa para transações.
-     * @returns {Promise<number>} O ID do insumo encontrado ou criado.
-     */
     static async findOrCreateType(descricao, connection) {
-        const conn = connection || db; // Usa a conexão da transação ou o pool padrão
+        const conn = connection || db;
         let [rows] = await conn.query('SELECT codigo FROM insumo WHERE descricao = ?', [descricao]);
         if (rows.length > 0) {
             return rows[0].codigo;
@@ -29,11 +20,6 @@ class Insumo {
 }
 
 class InsumoFilial {
-    /**
-     * Lista todos os insumos registrados em uma filial (inventário geral).
-     * @param {string} filialCnpj - O CNPJ da filial.
-     * @returns {Promise<Array>} Um array com os insumos da filial.
-     */
     static async findByFilial(filialCnpj) {
         const query = `
             SELECT inf.codigo, inf.validade, inf.local, inf.descricao AS descricao_item, i.descricao, i.imagem
@@ -43,7 +29,34 @@ class InsumoFilial {
             ORDER BY i.descricao ASC;
         `;
         const [rows] = await db.query(query, [filialCnpj]);
-        return rows;
+
+        // LÓGICA DE NEGÓCIO 100% NO BACKEND
+        return rows.map(row => {
+            let status = 'status-ok'; // Padrão Verde
+
+            if (row.validade) {
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0);
+
+                const dataValidade = parseDateAsLocal(row.validade);
+
+                const diffTime = dataValidade - hoje;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays < 0) {
+                    status = 'status-expired'; // Vermelho
+                } else if (diffDays <= 30) {
+                    status = 'status-warning'; // Amarelo
+                }
+            }
+
+            // Retorna um objeto PRONTO para o frontend consumir
+            return {
+                ...row,
+                status: status,
+                validade_formatada: formatDateForClient(row.validade) // Novo campo apenas para exibição
+            };
+        });
     }
 
     /**
@@ -79,7 +92,7 @@ class InsumoFilial {
             return result;
         } catch (error) {
             await connection.rollback();
-            throw error; // Propaga o erro para o controller
+            throw error;
         } finally {
             connection.release();
         }
