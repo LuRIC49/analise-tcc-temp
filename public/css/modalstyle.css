@@ -61,6 +61,33 @@
     font-size: 1em;
 }
 
+#editForm .form-group {
+    margin-bottom: 15px;
+}
+
+#editForm label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+#editForm input,
+#editForm select,
+#editForm textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+
+
+
+
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;

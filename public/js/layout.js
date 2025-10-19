@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// [NOVO] Adiciona o listener para o clique do menu mobile depois que o layout estiver pronto
+//Listener para o mobile
 document.addEventListener('layoutReady', () => {
     const mobileNavToggle = document.getElementById('mobile-nav-toggle');
     const mainNav = document.querySelector('.header nav');

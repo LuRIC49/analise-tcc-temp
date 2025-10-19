@@ -2,10 +2,8 @@ const Filial = require('../models/filialModel');
 const Vistoria = require('../models/vistoriaModel');
 const { Insumo, InsumoFilial } = require('../models/insumoModel');
 
-// --- CONTROLLERS PARA FILIAIS ---
 exports.listarFiliais = async (req, res) => {
     try {
-        // Garante que estamos usando a variável padronizada 'empresaCnpj'
         const { empresaCnpj } = req.user; 
         const filiais = await Filial.findByEmpresa(empresaCnpj);
         res.json(filiais);
@@ -167,7 +165,6 @@ exports.adicionarInsumoAVistoria = async (req, res) => {
         const { id: vistoria_codigo } = req.params;
         const { empresaCnpj } = req.user;
 
-        // USA O MÉTODO SEGURO: Garante que o usuário só possa adicionar insumos a vistorias da sua empresa
         const vistoria = await Vistoria.findByIdAndEmpresa(vistoria_codigo, empresaCnpj);
         
         if (!vistoria) {
@@ -195,6 +192,107 @@ exports.adicionarInsumoAVistoria = async (req, res) => {
 
 
 
+
+exports.editarInsumo = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { empresaCnpj } = req.user;
+        const { validade, local, descricao } = req.body;
+
+        // 1. Verifica se o insumo existe e pertence à empresa
+        const insumoExistente = await InsumoFilial.findById(id, empresaCnpj);
+        if (!insumoExistente) {
+            return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão.' });
+        }
+        
+        // LÓGICA DE HISTÓRICO: Inserir o estado *anterior* na tabela imutável
+        // PROBLEMA: Não temos o vistoria_codigo associado a esta alteração aqui.
+        // SOLUÇÃO TEMPORÁRIA: Não salvar no histórico imutável nesta tela.
+        // A lógica de histórico ficará APENAS na tela de vistoria-detalhe.js
+        // console.log("Dados antigos para histórico (se tivéssemos vistoria_codigo):", insumoExistente);
+
+        // 2. Atualiza os dados na tabela mutável
+        const affectedRows = await InsumoFilial.update(id, { validade, local, descricao });
+        if (affectedRows === 0) {
+            // Isso não deve acontecer se a busca acima funcionou, mas é uma segurança
+            throw new Error('Falha ao atualizar o insumo.');
+        }
+
+        res.json({ message: 'Insumo atualizado com sucesso!' });
+
+    } catch (error) {
+        console.error('Erro ao editar insumo:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+
+
+exports.buscarInsumoPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { empresaCnpj } = req.user;
+
+        const insumo = await InsumoFilial.findById(id, empresaCnpj);
+
+        if (!insumo) {
+            return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão para acessá-lo.' });
+        }
+
+        res.json(insumo);
+    } catch (error) {
+        console.error('Erro ao buscar detalhes do insumo:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+
+
+
+exports.adicionarInsumoDireto = async (req, res) => {
+    try {
+        const { cnpj: filial_cnpj } = req.params;
+        const insumoData = req.body; // Dados do modal
+
+        // Chama o model para criar o registro (que salva em ambas as tabelas)
+        await InsumoFilial.createDirect({ 
+            ...insumoData, 
+            filial_cnpj, 
+            tipo_descricao: insumoData.descricao // O campo 'descricao' do modal é o 'tipo_descricao'
+        });
+
+        res.status(201).json({ message: 'Insumo adicionado diretamente ao inventário com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao adicionar insumo direto:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+
+
+
 exports.excluirItemInventario = async (req, res) => {
-    //falta fazer
+    try {
+        const { id } = req.params;
+        const { empresaCnpj } = req.user;
+
+        // 1. Verifica se o insumo existe e pertence à empresa antes de excluir
+        const insumoExistente = await InsumoFilial.findById(id, empresaCnpj);
+        if (!insumoExistente) {
+            return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão para excluí-lo.' });
+        }
+
+        // 2. Remove APENAS da tabela mutável
+        const affectedRows = await InsumoFilial.remove(id);
+        if (affectedRows === 0) {
+            // Redundante, mas seguro
+            return res.status(404).json({ message: 'Falha ao excluir o insumo.' });
+        }
+
+        res.json({ message: 'Insumo removido do inventário com sucesso! (Histórico mantido)' });
+
+    } catch (error) {
+        console.error('Erro ao excluir insumo:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
 };

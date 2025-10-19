@@ -23,7 +23,7 @@ async function initializeCarousel() {
     const insumos = await fetchInsumos();
 
     if (insumos.length === 0) {
-        return; // stop se não houver insumos
+        return;
     }
 
     // cria o html e insere o carossel 

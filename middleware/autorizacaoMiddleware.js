@@ -1,9 +1,7 @@
 const Filial = require('../models/filialModel');
 
-/**
- * Middleware para verificar se a filial acessada pertence à empresa do usuário logado.
- * Extrai o CNPJ da filial dos parâmetros da URL.
- */
+// Middleware para verificar se a filial acessada pertence a empresa do usuario logado
+// Extrai o CNPJ da filial dos param URL
 exports.checkFilialOwnership = async (req, res, next) => {
     try {
         const { cnpj: filialCnpj } = req.params;
@@ -19,9 +17,8 @@ exports.checkFilialOwnership = async (req, res, next) => {
             return res.status(404).json({ message: "Filial não encontrada ou você не tem permissão para acessá-la." });
         }
 
-        // Anexa o objeto da filial na requisição para uso posterior, se necessário
         req.filial = filial;
-        next(); // Se a verificação passar, continua para o próximo handler (o controller)
+        next(); // continua para o próximocontroller)
 
     } catch (error) {
         console.error("Erro no middleware de autorização de filial:", error);

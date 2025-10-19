@@ -14,10 +14,10 @@
     <main class="main-content">
         <div class="outer-white-container">
             <div class="inner-grey-container">
-
                 <section id="vistorias-section">
-                    <div class="page-header">
-                        <h1 class="companies-title" id="vistorias-title">Vistorias</h1>
+                    
+                    <h1 class="companies-title" id="vistorias-title">Vistorias</h1>
+                    
                     <div class="actions-header">
                         <div class="filter-container">
                             <label for="filtro-vistorias">Visualizar por:</label>
@@ -32,15 +32,31 @@
                             <a href="#" id="btnIniciarVistoria" class="btn-new-item">Criar Nova Vistoria</a>
                         </div>
                     </div>
-                    </div>
                     
                     <div class="vistorias-list" id="vistorias-list">
                         <p>Carregando vistorias...</p>
                     </div>
                 </section>
-
             </div>
         </div>
+
+        <div id="promptModal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <h2 id="promptModalTitle">Iniciar Nova Vistoria</h2>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="promptInput">Nome do técnico responsável:</label>
+                        <input type="text" id="promptInput" name="promptInput" autocomplete="off" required>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel">Cancelar</button>
+                    <button type="submit" id="promptConfirmBtn" class="btn-save" disabled>Confirmar</button>
+                </div>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+        </div>
+
     </main>
 
     <footer class="footer"></footer>

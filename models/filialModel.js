@@ -3,9 +3,9 @@ const db = require('../db');
 class Filial {
     /**
      * Busca uma única filial pelo seu CNPJ, garantindo que ela pertença à empresa logada.
-     * @param {string} filialCnpj - O CNPJ da filial a ser encontrada.
-     * @param {string} empresaCnpj - O CNPJ da empresa-mãe (para segurança).
-     * @returns {Promise<object|null>} O objeto da filial ou null se не for encontrada.
+     * @param {string} filialCnpj
+     * @param {string} empresaCnpj 
+     * @returns {Promise<object|null>}
      */
     static async findById(filialCnpj, empresaCnpj) {
         const query = 'SELECT * FROM filial WHERE cnpj = ? AND empresa_cnpj = ?';
@@ -15,8 +15,8 @@ class Filial {
 
     /**
      * Busca todas as filiais pertencentes a uma empresa.
-     * @param {string} empresaCnpj - O CNPJ da empresa-mãe.
-     * @returns {Promise<Array>} Um array com todas as filiais encontradas.
+     * @param {string} empresaCnpj 
+     * @returns {Promise<Array>} array com todas as filiais encontradas.
      */
     static async findByEmpresa(empresaCnpj) {
         const query = 'SELECT * FROM filial WHERE empresa_cnpj = ? ORDER BY nome ASC';
@@ -26,9 +26,9 @@ class Filial {
 
     /**
      * Cria um novo registro de filial no banco de dados.
-     * @param {object} data - Contém nome, cnpj, endereco, email_responsavel.
-     * @param {string} empresaCnpj - O CNPJ da empresa-mãe.
-     * @returns {Promise<object>} O resultado da inserção.
+     * @param {object} data - nome, cnpj, endereco, email_responsavel.
+     * @param {string} empresaCnpj 
+     * @returns {Promise<object>}
      */
     static async create(data, empresaCnpj) {
         const { nome, cnpj, endereco, email_responsavel } = data;

@@ -3,10 +3,9 @@ const db = require('../db');
 class Vistoria {
 
     /**
-     * Busca uma vistoria pelo ID, mas garante que ela pertença a uma filial da empresa especificada.
      * @param {number} id - O código da vistoria.
      * @param {string} empresaCnpj - O CNPJ da empresa logada.
-     * @returns {Promise<object|null>} O objeto da vistoria se a verificação for bem-sucedida.
+     * @returns {Promise<object|null>}
      */
     static async findByIdAndEmpresa(id, empresaCnpj) {
         const query = `
@@ -20,9 +19,9 @@ class Vistoria {
 
 
     /**
-     * Busca uma vistoria pelo seu código (ID).
-     * @param {number} id - O código da vistoria.
-     * @returns {Promise<object|null>} O objeto da vistoria ou null.
+     * Busca uma vistoria pelo seu Código.
+     * @param {number} id 
+     * @returns {Promise<object|null>}
      */
     static async findById(id) {
         const [rows] = await db.query('SELECT * FROM vistoria WHERE codigo = ?', [id]);
@@ -31,8 +30,8 @@ class Vistoria {
 
     /**
      * Busca todas as vistorias de uma filial específica.
-     * @param {string} filialCnpj - O CNPJ da filial.
-     * @returns {Promise<Array>} Um array com as vistorias encontradas.
+     * @param {string} filialCnpj 
+     * @returns {Promise<Array>} array com as vistorias encontradas.
      */
     static async findByFilial(filialCnpj) {
         const query = 'SELECT * FROM vistoria WHERE filial_cnpj = ? ORDER BY data_inicio DESC';
@@ -53,8 +52,8 @@ class Vistoria {
 
     /**
      * Marca uma vistoria como finalizada, preenchendo a data_fim.
-     * @param {number} id - O código da vistoria a ser finalizada.
-     * @returns {Promise<number>} O número de linhas afetadas.
+     * @param {number} id 
+     * @returns {Promise<number>}
      */
     static async finalize(id) {
         const query = 'UPDATE vistoria SET data_fim = CURDATE() WHERE codigo = ?';
@@ -62,17 +61,7 @@ class Vistoria {
         return result.affectedRows;
     }
 
-    /**
-     * Remove uma vistoria do banco de dados.
-     * A regra ON DELETE CASCADE cuidará de remover os insumos_filial associados.
-     * @param {number} id - O código da vistoria a ser removida.
-     * @returns {Promise<number>} O número de linhas afetadas.
-     */
-    static async remove(id) {
-        const query = 'DELETE FROM vistoria WHERE codigo = ?';
-        const [result] = await db.execute(query, [id]);
-        return result.affectedRows;
-    }
+
 }
 
 module.exports = Vistoria;

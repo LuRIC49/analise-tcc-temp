@@ -80,11 +80,16 @@ exports.loginUsuario = async (req, res) => {
 
 exports.buscarPerfil = async (req, res) => {
     try {
-        const { cnpj } = req.user;
+        const { empresaCnpj } = req.user;
+
         const [rows] = await mainPool.execute(
-            'SELECT nome, cnpj, email FROM empresa WHERE cnpj = ?', [cnpj]
+            'SELECT nome, cnpj, email FROM empresa WHERE cnpj = ?',
+            [empresaCnpj] 
         );
-        if (rows.length === 0) return res.status(404).json({ message: 'Empresa não encontrada.' });
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Perfil da empresa não encontrado.' });
+        }
         
         const profileData = {
             name: rows[0].nome,
@@ -92,6 +97,7 @@ exports.buscarPerfil = async (req, res) => {
             email: rows[0].email,
         };
         res.json(profileData);
+
     } catch (error) {
         console.error('Erro ao buscar dados do perfil:', error);
         res.status(500).json({ message: 'Erro interno do servidor.' });
@@ -100,7 +106,7 @@ exports.buscarPerfil = async (req, res) => {
 
 
 exports.alterarEmail = async (req, res) => {
-    const { cnpj } = req.user;
+    const { empresaCnpj } = req.user;
     const { email } = req.body;
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -109,7 +115,7 @@ exports.alterarEmail = async (req, res) => {
 
     try {
         const query = `UPDATE empresa SET email = ? WHERE cnpj = ?`;
-        await mainPool.execute(query, [email, cnpj]);
+        await mainPool.execute(query, [email, empresaCnpj]);
         res.status(200).json({ message: 'E-mail atualizado com sucesso!' });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
@@ -121,7 +127,7 @@ exports.alterarEmail = async (req, res) => {
 };
 
 exports.alterarSenha = async (req, res) => {
-    const { cnpj } = req.user;
+    const { empresaCnpj } = req.user;
     const { senhaAtual, novaSenha } = req.body;
 
     if (!senhaAtual || !novaSenha || novaSenha.length < 8) {
@@ -129,7 +135,7 @@ exports.alterarSenha = async (req, res) => {
     }
 
     try {
-        const [rows] = await mainPool.execute(`SELECT password_hash FROM empresa WHERE cnpj = ?`, [cnpj]);
+        const [rows] = await mainPool.execute(`SELECT password_hash FROM empresa WHERE cnpj = ?`, [empresaCnpj]);
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Empresa não encontrada.' });
         }
@@ -143,7 +149,7 @@ exports.alterarSenha = async (req, res) => {
         const novoHash = await bcrypt.hash(novaSenha, 10);
         await mainPool.execute(
             `UPDATE empresa SET password_hash = ? WHERE cnpj = ?`, 
-            [novoHash, cnpj]
+            [novoHash, empresaCnpj]
         );
 
         res.status(200).json({ message: 'Senha alterada com sucesso! Por segurança, por favor, faça o login novamente.' });

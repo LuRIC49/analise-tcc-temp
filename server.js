@@ -76,7 +76,7 @@ async function initializeDatabase() {
 
         //Coloquei                 FOREIGN KEY (vistoria_codigo) REFERENCES vistoria(codigo) ON DELETE CASCADE , para caso excluir uma vistoria também excluir todos os insumos cadastrados nesta vistoria.
         await connection.execute(`
-            CREATE TABLE IF NOT EXISTS insumo_filial (
+            CREATE TABLE IF NOT EXISTS  insumo_filial_vistoria_imutavel(
                 codigo INT AUTO_INCREMENT PRIMARY KEY,
                 insumo_codigo INT NOT NULL,
                 filial_cnpj CHAR(14) NOT NULL,
@@ -90,6 +90,21 @@ async function initializeDatabase() {
             )
         `);
         console.log('✔ Tabela `insumo_filial` verificada/criada.');
+
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS insumo_filial_mutavel (
+                codigo INT AUTO_INCREMENT PRIMARY KEY,
+                insumo_codigo INT NOT NULL,
+                filial_cnpj CHAR(14) NOT NULL,
+                validade DATE,
+                local VARCHAR(200),
+                descricao VARCHAR(200) NULL,
+                FOREIGN KEY (insumo_codigo) REFERENCES insumo(codigo),
+                FOREIGN KEY (filial_cnpj) REFERENCES filial(cnpj) ON DELETE CASCADE
+            )
+        `);
+        console.log('✔ Tabela `insumo_filial_mutavel` verificada/criada.');
+
 
     } catch (error) {
         console.error('❌ Erro ao inicializar o banco de dados:', error);

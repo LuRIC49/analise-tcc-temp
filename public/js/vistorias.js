@@ -13,16 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // --- ELEMENTOS DO DOM ---
     const vistoriasListDiv = document.getElementById('vistorias-list');
     const btnIniciarVistoria = document.getElementById('btnIniciarVistoria');
     const vistoriasTitle = document.getElementById('vistorias-title');
     const filtroVistorias = document.getElementById('filtro-vistorias');
 
-    // --- ESTADO DA APLICAÇÃO ---
-    let todasAsVistorias = []; // Armazena a lista completa de vistorias
 
-    // --- FUNÇÕES ---
+    let todasAsVistorias = []; //lista de vistorias
+
     async function setPageTitle() {
          try {
             const response = await fetch(`/api/filiais/${filialCnpj}`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -105,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarVistorias(vistoriasFiltradas);
     }
 
-    // --- EVENT LISTENERS ---
     btnIniciarVistoria.addEventListener('click', async (event) => {
         event.preventDefault();
         
@@ -138,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     filtroVistorias.addEventListener('change', aplicarFiltro);
 
-    // --- INICIALIZAÇÃO ---
     setPageTitle();
     carregarVistorias();
 });

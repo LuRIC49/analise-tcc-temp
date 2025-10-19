@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-
     //fUNÇÕES DE VALIDAÇÃO E ERRO
     function displayError(inputElement, message) {
         let errorDiv = inputElement.nextElementSibling;

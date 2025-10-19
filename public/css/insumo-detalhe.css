@@ -1,0 +1,128 @@
+.main-content {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+}
+
+.detail-container h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
+.detail-panel {
+    display: flex;
+    gap: 30px;
+}
+
+.detail-image {
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.detail-image img {
+    max-width: 350px;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.detail-info p {
+    font-size: 1.1em;
+    line-height: 1.7;
+    color: #555;
+    margin: 0 0 15px 0;
+}
+
+.description-box {
+    background-color: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 15px;
+    min-height: 50px;
+}
+
+@media (max-width: 768px) {
+    .detail-panel {
+        flex-direction: column;
+        align-items: center;
+    }
+    .detail-info {
+        text-align: center;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* EM css/insumo-detalhe.css */
+
+/* --- BOTÕES DE AÇÃO --- */
+.detail-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: center; /* Alinha os botões à direita */
+    gap: 15px;
+}
+
+/* Estilo base para os botões */
+.detail-actions button {
+    padding: 10px 25px;
+    font-size: 1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+/* Botão Voltar (Secundário) */
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Botão Editar (Primário) */
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+/* Botão Excluir (Perigo) */
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* --- RESPONSIVIDADE DOS BOTÕES --- */
+@media (max-width: 768px) {
+    .detail-actions {
+        flex-direction: column; /* Empilha os botões */
+        align-items: stretch; /* Faz os botões ocuparem a largura */
+    }
+}
