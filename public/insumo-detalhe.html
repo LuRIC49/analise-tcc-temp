@@ -20,6 +20,7 @@
                 </div>
                 <div class="detail-info">
                     <p><strong>Código de Inventário:</strong> <span id="insumo-codigo">...</span></p>
+                    <p id="serial-display-row" style="display: none;"><strong>Nº Serial:</strong> <span id="insumo-serial">...</span></p>
                     <p><strong>Tipo de Insumo:</strong> <span id="insumo-tipo">...</span></p>
                     <p><strong>Localização:</strong> <span id="insumo-local">...</span></p>
                     <p><strong>Data de Validade:</strong> <span id="insumo-validade">...</span></p>
@@ -30,6 +31,7 @@
 
             <div class="detail-actions">
                 <button id="btnVoltar" class="btn-secondary">Voltar</button>
+                <button id="btnVerHistorico" class="btn-info">Ver Histórico</button>
                 <button id="btnEditar" class="btn-primary">Editar</button>
                 <button id="btnExcluir" class="btn-danger">Excluir</button>
             </div>
@@ -42,6 +44,13 @@
             <form id="editForm">
                 <input type="hidden" id="edit-insumo-codigo" name="insumo_codigo">
                 <input type="hidden" id="edit-filial-cnpj" name="filial_cnpj">
+
+                <div class="form-group" id="edit-serial-group" style="display: none;">
+                    <label for="edit-serial">Nº Serial:</label>
+                    <input type="text" id="edit-serial" name="numero_serial" list="serial-list-edit" autocomplete="off">
+                </div>
+
+                <datalist id="serial-list-edit"></datalist>
 
                 <div class="form-group">
                     <label for="edit-local">Localização:</label>
@@ -61,6 +70,20 @@
                 </div>
             </form>
             <button class="modal-close-btn">&times;</button>
+        </div>
+    </div>
+
+
+
+        <div id="historyModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;"> <h2>Histórico de Alterações</h2>
+            <div id="historyModalBody" style="max-height: 60vh; overflow-y: auto;">
+                <p>Carregando histórico...</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="historyModalCloseBtn">Fechar</button>
+            </div>
+            <button class="modal-close-btn" id="historyModalCloseXBtn">&times;</button>
         </div>
     </div>
 

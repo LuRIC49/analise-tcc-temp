@@ -54,12 +54,16 @@
 .companies-grid {
     display: grid;
     gap: 25px;
-    grid-template-columns: 1fr; /* Padrão Mobile: 1 coluna */
+    /* [ALTERADO] Torna o grid responsivo automaticamente */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+    /* Remove as regras @media específicas para grid-template-columns se houver */
 }
 
 /* Card individual da filial */
 .company-card {
     background-color: #e0e0e0;
+    min-width: 223px;
+    max-width: 223px;
     border: 1px solid #ccc;
     border-radius: 8px;
     padding: 20px;

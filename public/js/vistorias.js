@@ -18,8 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const vistoriasTitle = document.getElementById('vistorias-title');
     const filtroVistorias = document.getElementById('filtro-vistorias');
 
+    const promptModal = document.getElementById('promptModal');
+    const promptInput = document.getElementById('promptInput');
+    const promptConfirmBtn = document.getElementById('promptConfirmBtn');
+    const promptCancelBtn = promptModal.querySelector('.btn-cancel');
+    const promptCloseBtn = promptModal.querySelector('.modal-close-btn');
 
-    let todasAsVistorias = []; //lista de vistorias
+    let todasAsVistorias = [];
 
     async function setPageTitle() {
          try {
@@ -87,30 +92,40 @@ document.addEventListener('DOMContentLoaded', () => {
         let vistoriasFiltradas = [...todasAsVistorias];
 
         switch (filtroSelecionado) {
-            case 'recentes':
-                vistoriasFiltradas.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio));
-                break;
-            case 'antigas':
-                vistoriasFiltradas.sort((a, b) => new Date(a.data_inicio) - new Date(b.data_inicio));
-                break;
-            case 'finalizadas':
-                vistoriasFiltradas = vistoriasFiltradas.filter(v => v.data_fim !== null);
-                break;
-            case 'andamento':
-                vistoriasFiltradas = vistoriasFiltradas.filter(v => v.data_fim === null);
-                break;
+            case 'recentes': vistoriasFiltradas.sort((a, b) => new Date(b.data_inicio) - new Date(a.data_inicio)); break;
+            case 'antigas': vistoriasFiltradas.sort((a, b) => new Date(a.data_inicio) - new Date(b.data_inicio)); break;
+            case 'finalizadas': vistoriasFiltradas = vistoriasFiltradas.filter(v => v.data_fim !== null); break;
+            case 'andamento': vistoriasFiltradas = vistoriasFiltradas.filter(v => v.data_fim === null); break;
         }
         renderizarVistorias(vistoriasFiltradas);
     }
 
-    btnIniciarVistoria.addEventListener('click', async (event) => {
-        event.preventDefault();
+    function openPromptModal() {
+        promptInput.value = ''; 
+        promptConfirmBtn.disabled = true; 
+        promptModal.style.display = 'flex';
+        promptInput.focus(); 
+    }
+
+    function closePromptModal() {
+        promptModal.style.display = 'none';
+    }
+
+    promptInput.addEventListener('input', () => {
+        promptConfirmBtn.disabled = promptInput.value.trim() === ''; 
+    });
+
+    promptConfirmBtn.addEventListener('click', async () => {
+        const tecnicoResponsavel = promptInput.value.trim();
         
-        const tecnicoResponsavel = prompt("Por favor, digite o nome do técnico responsável pela vistoria:");
-        if (!tecnicoResponsavel || tecnicoResponsavel.trim() === '') {
-            alert('O nome do técnico é obrigatório para iniciar a vistoria.');
+        if (!tecnicoResponsavel) {
+            alert('O nome do técnico é obrigatório.');
+            promptInput.focus();
             return;
         }
+
+        promptConfirmBtn.disabled = true; 
+        promptConfirmBtn.textContent = 'Criando...'; 
 
         try {
             const response = await fetch(`/api/vistorias/filial/${filialCnpj}`, {
@@ -123,14 +138,30 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
-            if (!response.ok) throw new Error(result.message);
+            if (!response.ok) throw new Error(result.message || 'Erro desconhecido ao criar vistoria.');
 
-            alert(result.message);
+            closePromptModal();
             window.location.href = `vistoria-detalhe.html?id=${result.vistoriaId}`;
 
         } catch (error) {
             alert(`Erro ao iniciar vistoria: ${error.message}`);
+            promptConfirmBtn.disabled = false; 
+            promptConfirmBtn.textContent = 'Confirmar';
         }
+    });
+
+    promptCancelBtn.addEventListener('click', closePromptModal);
+    promptCloseBtn.addEventListener('click', closePromptModal);
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === promptModal) {
+            closePromptModal();
+        }
+    });
+
+    btnIniciarVistoria.addEventListener('click', (event) => {
+        event.preventDefault();
+        openPromptModal(); 
     });
 
     filtroVistorias.addEventListener('change', aplicarFiltro);

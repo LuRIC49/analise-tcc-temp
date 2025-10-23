@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/insumostyle.css">
     <link rel="stylesheet" href="css/inventario.css">
     <link rel="stylesheet" href="css/vistoria-detalhe.css">
+    <link rel="stylesheet" href="css/filial-inventario.css">
 </head>
 <body>
     <header class="header"></header>
@@ -65,6 +66,21 @@
                 </div>
             </form>
             <button class="modal-close-btn">&times;</button>
+        </div>
+    </div>
+
+    <div id="confirmFinalizarModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h2>Confirmar Finalização</h2> 
+
+            <p style="text-align: center; margin-bottom: 25px;">Tem certeza que deseja finalizar esta vistoria?</p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="confirmFinalizarCancelBtn">Cancelar</button>
+                <button type="button" id="confirmFinalizarConfirmBtn" class="btn-save">Confirmar</button> 
+            </div>
+
+            <button class="modal-close-btn" id="confirmFinalizarCloseBtn">&times;</button>
         </div>
     </div>
 

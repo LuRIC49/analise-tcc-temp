@@ -49,6 +49,7 @@
     background-color: #007bff;
     color: white;
     padding: 12px 28px;
+    margin-right: 10px;
     font-size: 1.1em;
     border-radius: 5px;
     text-decoration: none;
@@ -59,6 +60,7 @@
 .btn-action:hover {
     background-color: #0056b3;
 }
+
 
 
 .btn-details {
