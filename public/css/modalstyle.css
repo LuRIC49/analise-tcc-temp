@@ -105,7 +105,9 @@
 }
 
 .btn-cancel { background-color: #ff0000; color: white; }
-.btn-save { background-color: #28a745; color: white; }
+.btn-save {
+     background-color: #28a745; color: white; 
+    }
 
 .modal-close-btn {
     position: absolute;
@@ -117,3 +119,4 @@
     color: #aaa;
     cursor: pointer;
 }
+

@@ -40,23 +40,27 @@
 .page-actions {
     width: 100%;
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-end; /* Mantém à direita em telas largas */
+    flex-wrap: wrap; /* Permite que botões quebrem a linha se necessário */
+    gap: 10px; /* Espaço entre botões */
     margin-top: 20px;
     margin-bottom: 20px;
 }
 
 .btn-action {
-    background-color: #007bff;
+    /* Estilos base: cor, padding, etc. */
     color: white;
     padding: 12px 28px;
-    margin-right: 10px;
     font-size: 1.1em;
     border-radius: 5px;
     text-decoration: none;
     font-weight: bold;
     transition: background-color 0.2s;
+    border: none; /* Garante que não haja borda */
+    cursor: pointer; /* Adiciona cursor de ponteiro para <button> */
+    text-align: center; /* Centraliza texto */
+    /* Cores específicas são definidas inline ou por ID/classe específica */
 }
-
 .btn-action:hover {
     background-color: #0056b3;
 }
@@ -122,16 +126,28 @@
         text-align: center;
         font-size: 1.1em;
     }
-    .page-actions {
-        justify-content: center;
+.page-actions {
+        flex-direction: column; /* Empilha os botões verticalmente */
+        align-items: stretch; /* Faz os botões esticarem para ocupar a largura */
+        justify-content: center; /* Centraliza (opcional) */
+        gap: 15px; /* Aumenta o espaço vertical entre botões empilhados */
     }
+
     .btn-action {
-        width: 100%;
-        text-align: center;
-        box-sizing: border-box;
+        width: 100%; /* Faz cada botão ocupar a largura total */
+        box-sizing: border-box; /* Garante que padding não estoure a largura */
+        /* Padding vertical pode ser ajustado se necessário para mobile */
+        /* padding: 15px 20px; */
     }
 }
 
+
+#btnAdicionarInsumoDireto { background-color: #28a745; }
+#btnAdicionarInsumoDireto:hover { background-color: #218838; }
+#btnVerVistorias { background-color: #007bff; }
+#btnVerVistorias:hover { background-color: #0056b3; }
+#btnGerarRelatorio { background-color: #17a2b8; }
+#btnGerarRelatorio:hover { background-color: #117a8b; }
 
 
 .products-section {

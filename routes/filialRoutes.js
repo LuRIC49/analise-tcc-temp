@@ -14,4 +14,7 @@ router.post('/', authenticateToken, inventarioController.criarFilial);
 // Busca os detalhes de UMA filial específica
 router.get('/:cnpj', authenticateToken, inventarioController.buscarDetalhesFilial);
 
+//relatório pdf filial inventario
+router.get('/:cnpj/report', authenticateToken, checkFilialOwnership, inventarioController.gerarRelatorioInventario);
+
 module.exports = router;

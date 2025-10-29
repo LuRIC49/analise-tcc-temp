@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnVerVistorias = document.getElementById('btnVerVistorias');
     const btnAdicionarInsumoDireto = document.getElementById('btnAdicionarInsumoDireto');
 
+    const btnGerarRelatorio = document.getElementById('btnGerarRelatorio');
     // Elementos dos Modais
     const selectionModal = document.getElementById('selectionModal');
     const detailsModal = document.getElementById('detailsModal');
@@ -37,6 +38,64 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
+
+
+
+    if (btnGerarRelatorio) {
+        btnGerarRelatorio.addEventListener('click', async () => {
+            if (!filialCnpj) {
+                alert('CNPJ da filial não encontrado. Não é possível gerar o relatório.');
+                return;
+            }
+
+            const originalButtonText = btnGerarRelatorio.textContent;
+            btnGerarRelatorio.disabled = true;
+            btnGerarRelatorio.textContent = 'Gerando...';
+
+            try {
+                const response = await fetch(`/api/filiais/${filialCnpj}/report`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    // Tenta ler a mensagem de erro do backend se for JSON
+                    let errorMsg = `Erro ${response.status}: ${response.statusText}`;
+                    try {
+                         const errorResult = await response.json();
+                         errorMsg = errorResult.message || errorMsg;
+                    } catch(e) { /* Ignora se não for JSON */ }
+                    throw new Error(errorMsg);
+                }
+
+                // Recebe o PDF como Blob
+                const blob = await response.blob();
+
+                // Cria URL temporária para o Blob
+                const url = window.URL.createObjectURL(blob);
+
+                // Cria link temporário para iniciar download
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                // Define o nome do arquivo (pode ser pego do header Content-Disposition se o backend enviar)
+                a.download = `Relatorio_Inventario_${filialCnpj}.pdf`; 
+                document.body.appendChild(a);
+                a.click();
+
+                // Limpeza
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+            } catch (error) {
+                console.error('Erro ao gerar ou baixar relatório:', error);
+                alert(`Não foi possível gerar o relatório: ${error.message}`);
+            } finally {
+                btnGerarRelatorio.disabled = false;
+                btnGerarRelatorio.textContent = originalButtonText;
+            }
+        });
+    }
     // --- FUNÇÕES PARA CARREGAR DADOS ---
     async function carregarDetalhesFilial() {
         if (!filialNameInfo || !filialCnpjInfo || !filialAddressInfo || !filialEmailInfo) {

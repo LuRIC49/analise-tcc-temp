@@ -35,7 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
         'confirmFinalizarCloseBtn'
     );
 
+    const confirmExcluirItemModal = document.getElementById('confirmExcluirItemModal');
+    const confirmExcluirItemCancelBtn = document.getElementById('confirmExcluirItemCancelBtn');
+    const confirmExcluirItemConfirmBtn = document.getElementById('confirmExcluirItemConfirmBtn');
+    const confirmExcluirItemCloseBtn = document.getElementById('confirmExcluirItemCloseBtn');
+    let itemParaExcluirId = null;
+
     let filialCnpjGlobal = null;
+    let isVistoriaAberta = true;
 
     async function carregarDadosVistoria() {
         try {
@@ -46,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const { detalhes, insumos } = await response.json();
 
             filialCnpjGlobal = detalhes.filial_cnpj;
+            isVistoriaAberta = detalhes.data_fim === null;
+
             const dataInicio = new Date(
                 detalhes.data_inicio
             ).toLocaleDateString();
@@ -54,11 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Técnico:</strong> ${detalhes.tecnico_responsavel}</p>
                 <p><strong>Data de Início:</strong> ${dataInicio}</p>
                 <p><strong>Status:</strong> ${
-                    detalhes.data_fim ? 'Finalizada' : 'Em Andamento'
+                    isVistoriaAberta ? 'Em Andamento' : 'Finalizada'
                 }</p>
             `;
 
-            if (detalhes.data_fim) {
+            if (!isVistoriaAberta) {
                 if (btnAdicionarInsumo) btnAdicionarInsumo.style.display = 'none';
                 if (btnFinalizarVistoria) btnFinalizarVistoria.style.display = 'none';
             }
@@ -68,16 +77,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 insumosGrid.innerHTML =
                     '<p>Nenhum insumo registrado nesta vistoria ainda.</p>';
             } else {
-                insumos.forEach((item) =>
-                    insumosGrid.appendChild(createInsumoCard(item))
-                );
+                insumos.forEach((item) => {
+                    insumosGrid.appendChild(createInsumoCard(item, isVistoriaAberta));
+                });
             }
         } catch (error) {
             document.querySelector('main').innerHTML = `<h1>${error.message}</h1>`;
         }
     }
 
-    function createInsumoCard(item) {
+    function createInsumoCard(item, isAberta) {
         const card = document.createElement('div');
         card.className = 'product-card';
         let statusClass = 'status-ok';
@@ -107,6 +116,18 @@ document.addEventListener('DOMContentLoaded', () => {
             cardTitle = item.tipo_insumo || 'Insumo';
         }
         const imageUrl = item.imagem || 'images/logotipo.png';
+
+        let deleteButtonHtml = '';
+        if (isAberta && item.codigo) {
+            deleteButtonHtml = `
+                <button type="button" class="btn-danger btn-excluir-historico"
+                        data-id="${item.codigo}"
+                        style="padding: 5px 10px; font-size: 0.9em; margin-top: 10px;">
+                    Excluir da Vistoria
+                </button>
+            `;
+        }
+
         card.innerHTML = `
             <img src="${imageUrl}" alt="${
                 item.tipo_insumo || 'Insumo'
@@ -121,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
             <p><strong>Válido até:</strong> ${validadeFormatada}</p>
+            ${deleteButtonHtml}
         `;
         return card;
     }
@@ -135,6 +157,20 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             if (locationDatalist) locationDatalist.innerHTML = '';
         }
+         if (modalElement === confirmExcluirItemModal) {
+             itemParaExcluirId = null;
+             if(confirmExcluirItemConfirmBtn) {
+                 confirmExcluirItemConfirmBtn.disabled = false;
+                 confirmExcluirItemConfirmBtn.textContent = 'Confirmar Exclusão';
+             }
+         }
+         // Adicionado reset para o modal de finalizar também
+         if (modalElement === confirmFinalizarModal) {
+            if(confirmFinalizarConfirmBtn) {
+                confirmFinalizarConfirmBtn.disabled = false;
+                confirmFinalizarConfirmBtn.textContent = 'Sim (Confirmar)';
+            }
+         }
     }
 
     document
@@ -152,34 +188,31 @@ document.addEventListener('DOMContentLoaded', () => {
             btn?.addEventListener('click', () => closeModal(detailsModal))
         );
 
-    function openConfirmFinalizarModal() {
-        if (confirmFinalizarModal) confirmFinalizarModal.style.display = 'flex';
-    }
-
+    // FUNÇÃO closeConfirmFinalizarModal DECLARADA AQUI
     function closeConfirmFinalizarModal() {
-        if (confirmFinalizarModal) confirmFinalizarModal.style.display = 'none';
-        if (confirmFinalizarConfirmBtn) {
-            confirmFinalizarConfirmBtn.disabled = false;
-            confirmFinalizarConfirmBtn.textContent = 'Sim (Confirmar)';
-        }
+        closeModal(confirmFinalizarModal); // Reutiliza a lógica genérica de fechar e resetar
     }
 
+    // Listeners que USAM closeConfirmFinalizarModal
     if (confirmFinalizarCancelBtn)
         confirmFinalizarCancelBtn.addEventListener(
             'click',
-            closeConfirmFinalizarModal
+            closeConfirmFinalizarModal // Agora a função existe
         );
     if (confirmFinalizarCloseBtn)
         confirmFinalizarCloseBtn.addEventListener(
             'click',
-            closeConfirmFinalizarModal
+            closeConfirmFinalizarModal // Agora a função existe
         );
-    window.addEventListener('click', (event) => {
-        if (event.target === confirmFinalizarModal)
-            closeConfirmFinalizarModal();
-        if (event.target === selectionModal) closeModal(selectionModal);
-        if (event.target === detailsModal) closeModal(detailsModal);
-    });
+
+    // Fechar ao clicar fora
+     window.addEventListener('click', (event) => {
+         if (event.target === confirmFinalizarModal) closeConfirmFinalizarModal(); // Agora a função existe
+         if (event.target === selectionModal) closeModal(selectionModal);
+         if (event.target === detailsModal) closeModal(detailsModal);
+         if (event.target === confirmExcluirItemModal) closeModal(confirmExcluirItemModal);
+     });
+
 
     async function fetchLocations(cnpj) {
         try {
@@ -342,6 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function openConfirmFinalizarModal() {
+        if (confirmFinalizarModal) confirmFinalizarModal.style.display = 'flex';
+    }
+
     if (btnFinalizarVistoria) {
         btnFinalizarVistoria.addEventListener('click', (e) => {
             e.preventDefault();
@@ -365,11 +402,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
 
-                closeConfirmFinalizarModal();
+                closeConfirmFinalizarModal(); // Chama a função que agora existe
                 window.location.reload();
             } catch (error) {
                 alert(`Erro ao finalizar: ${error.message}`);
-                closeConfirmFinalizarModal();
+                closeConfirmFinalizarModal(); // Chama a função que agora existe
+            }
+        });
+    }
+
+    function openConfirmExcluirItemModal(itemId) {
+        itemParaExcluirId = itemId;
+        if(confirmExcluirItemModal) confirmExcluirItemModal.style.display = 'flex';
+    }
+
+    if (confirmExcluirItemConfirmBtn) {
+        confirmExcluirItemConfirmBtn.addEventListener('click', async () => {
+            if (!itemParaExcluirId) return;
+
+            confirmExcluirItemConfirmBtn.disabled = true;
+            confirmExcluirItemConfirmBtn.textContent = 'Excluindo...';
+
+            try {
+                const response = await fetch(`/api/historico/${itemParaExcluirId}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || `Erro ${response.status}`);
+                }
+
+                closeModal(confirmExcluirItemModal);
+                carregarDadosVistoria();
+
+            } catch (error) {
+                alert(`Erro ao excluir item: ${error.message}`);
+                closeModal(confirmExcluirItemModal);
+            }
+        });
+    }
+
+    if (insumosGrid) {
+        insumosGrid.addEventListener('click', (event) => {
+            if (event.target.classList.contains('btn-excluir-historico')) {
+                event.preventDefault();
+                const historiaId = event.target.getAttribute('data-id');
+                if (historiaId) {
+                    openConfirmExcluirItemModal(historiaId);
+                } else {
+                    console.error('Botão de excluir clicado, mas data-id não encontrado.');
+                }
             }
         });
     }

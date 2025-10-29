@@ -1,12 +1,28 @@
+const { parseDateAsLocal, formatDateForClient } = require('../utils/dateFormatter');
 const Filial = require('../models/filialModel');
 const Vistoria = require('../models/vistoriaModel');
 const { Insumo, InsumoFilial } = require('../models/insumoModel');
-
 const db = require('../db');
+const { createInventoryPdf } = require('../utils/pdfGenerator');
+
+
+function isValidFutureDate(dateString) {
+    if (!dateString) return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return false;
+    const inputDate = parseDateAsLocal(dateString);
+    if (!inputDate || isNaN(inputDate)) return false;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return inputDate >= today;
+}
+function isNotEmpty(value) {
+     return value !== null && value !== undefined && String(value).trim() !== ''; 
+    }
+
+// --- Funções do Controller ---
 
 exports.listarFiliais = async (req, res) => {
     try {
-        const { empresaCnpj } = req.user; 
+        const { empresaCnpj } = req.user;
         const filiais = await Filial.findByEmpresa(empresaCnpj);
         res.json(filiais);
     } catch (error) {
@@ -17,6 +33,13 @@ exports.listarFiliais = async (req, res) => {
 
 exports.criarFilial = async (req, res) => {
     try {
+        // Adicionar validação de campos obrigatórios para filial aqui se necessário
+        const { nome, cnpj, endereco, email_responsavel } = req.body;
+        if (!isNotEmpty(nome) || !isNotEmpty(cnpj) || !isNotEmpty(endereco) || !isNotEmpty(email_responsavel)) {
+            return res.status(400).json({ message: 'Todos os campos são obrigatórios para criar filial.' });
+        }
+        // Validação de formato CNPJ e Email também seria bom aqui
+
         const { empresaCnpj } = req.user;
         await Filial.create(req.body, empresaCnpj);
         res.status(201).json({ message: 'Filial cadastrada com sucesso!' });
@@ -44,10 +67,8 @@ exports.buscarDetalhesFilial = async (req, res) => {
     }
 };
 
-// --- CONTROLLERS PARA VISTORIAS ---
 exports.listarVistorias = async (req, res) => {
     try {
-        // A autorização é garantida pelo middleware checkFilialOwnership
         const { cnpj: filialCnpj } = req.params;
         const vistorias = await Vistoria.findByFilial(filialCnpj);
         res.json(vistorias);
@@ -61,7 +82,7 @@ exports.iniciarNovaVistoria = async (req, res) => {
     try {
         const { cnpj: filialCnpj } = req.params;
         const { tecnico_responsavel } = req.body;
-        if (!tecnico_responsavel) {
+        if (!isNotEmpty(tecnico_responsavel)) { // Usa a validação
             return res.status(400).json({ message: 'O nome do técnico responsável é obrigatório.' });
         }
         const vistoriaId = await Vistoria.create({ filial_cnpj: filialCnpj, tecnico_responsavel });
@@ -76,17 +97,13 @@ exports.finalizarVistoria = async (req, res) => {
     try {
         const { id } = req.params;
         const { empresaCnpj } = req.user;
-
-        // USA O MÉTODO SEGURO: Verifica a propriedade da vistoria antes de qualquer ação
         const vistoria = await Vistoria.findByIdAndEmpresa(id, empresaCnpj);
-
         if (!vistoria) {
             return res.status(404).json({ message: 'Vistoria não encontrada ou você não tem permissão.' });
         }
         if (vistoria.data_fim) {
             return res.status(403).json({ message: 'Ação proibida. Esta vistoria já foi finalizada.' });
         }
-        
         await Vistoria.finalize(id);
         res.status(200).json({ message: 'Vistoria finalizada com sucesso!' });
     } catch (error) {
@@ -99,37 +116,25 @@ exports.excluirVistoria = async (req, res) => {
     try {
         const { id } = req.params;
         const { empresaCnpj } = req.user;
-
-        // USA O MÉTODO SEGURO: Garante que o usuário só possa excluir vistorias da sua própria empresa
         const vistoria = await Vistoria.findByIdAndEmpresa(id, empresaCnpj);
-
         if (!vistoria) {
             return res.status(404).json({ message: 'Vistoria não encontrada ou você não tem permissão para excluí-la.' });
         }
         if (vistoria.data_fim) {
             return res.status(403).json({ message: 'Ação proibida. Não é possível excluir uma vistoria finalizada.' });
         }
-
-        // NOTA: A remoção da vistoria está configurada com ON DELETE CASCADE
-        // no server.js, então isso deve excluir os insumos da tabela imutável
-        // associados a esta vistoria.
-        // Precisamos garantir que o vistoriaModel.js tenha o método .remove(id)
         if (typeof Vistoria.remove !== 'function') {
-             // Fallback ou erro se .remove não existir
-             const [result] = await require('../db').execute('DELETE FROM vistoria WHERE codigo = ?', [id]);
+             const [result] = await db.execute('DELETE FROM vistoria WHERE codigo = ?', [id]);
              if(result.affectedRows === 0) throw new Error('Falha ao remover a vistoria.');
         } else {
              await Vistoria.remove(id);
         }
-        
         res.status(200).json({ message: 'Vistoria e seus insumos foram excluídos com sucesso!' });
     } catch (error) {
         console.error('Erro ao excluir vistoria:', error);
         res.status(500).json({ message: 'Erro interno do servidor.' });
     }
 };
-
-// --- CONTROLLERS PARA INVENTÁRIO/INSUMOS ---
 
 exports.listarTiposDeInsumos = async (req, res) => {
     try {
@@ -141,13 +146,9 @@ exports.listarTiposDeInsumos = async (req, res) => {
     }
 };
 
-/**
- * NOVO: Lista os números de seriais distintos de uma filial.
- */
 exports.listarSeriaisPorFilial = async (req, res) => {
     try {
         const { cnpj: filialCnpj } = req.params;
-        // O middleware checkFilialOwnership já validou a posse desta filial
         const seriais = await InsumoFilial.findSeriaisByFilial(filialCnpj);
         res.json(seriais);
     } catch (error) {
@@ -156,10 +157,19 @@ exports.listarSeriaisPorFilial = async (req, res) => {
     }
 };
 
+exports.listarLocaisPorFilial = async (req, res) => {
+    try {
+        const { cnpj: filialCnpj } = req.params;
+        const locais = await Filial.findLocationsByFilial(filialCnpj);
+        res.json(locais);
+    } catch (error) {
+        console.error('Erro ao listar locais da filial:', error);
+        res.status(500).json({ message: 'Erro interno do servidor ao buscar locais.' });
+    }
+};
 
 exports.listarInventario = async (req, res) => {
     try {
-        // A autorização já é garantida pelo middleware checkFilialOwnership
         const { cnpj: filialCnpj } = req.params;
         const inventario = await InsumoFilial.findByFilial(filialCnpj);
         res.json(inventario);
@@ -173,14 +183,10 @@ exports.buscarDetalhesVistoria = async (req, res) => {
     try {
         const { id } = req.params;
         const { empresaCnpj } = req.user;
-
-        // USA O MÉTODO SEGURO: Garante que o usuário só possa ver detalhes de vistorias da sua empresa
         const vistoria = await Vistoria.findByIdAndEmpresa(id, empresaCnpj);
-
         if (!vistoria) {
-            return res.status(404).json({ message: 'Vistoria não encontrada ou você не tem permissão para acessá-la.' });
+            return res.status(404).json({ message: 'Vistoria não encontrada ou você não tem permissão para acessá-la.' });
         }
-        
         const insumos = await InsumoFilial.findByVistoria(id);
         res.json({ detalhes: vistoria, insumos });
     } catch (error) {
@@ -193,33 +199,41 @@ exports.adicionarInsumoAVistoria = async (req, res) => {
     try {
         const { id: vistoria_codigo } = req.params;
         const { empresaCnpj } = req.user;
-        const { descricao, validade, local, descricao_item, numero_serial } = req.body; // Pega o serial do body
+        const { descricao, validade, local, descricao_item, numero_serial } = req.body;
 
-        // [NOVA VALIDAÇÃO] Verifica se é extintor e exige serial
-        if (descricao && descricao.toLowerCase().includes('extintor') && (!numero_serial || numero_serial.trim() === '')) {
-            return res.status(400).json({ message: 'O Número de Serial é obrigatório para extintores.' });
+        // --- VALIDAÇÕES OBRIGATÓRIAS ---
+        if (!isNotEmpty(descricao)) return res.status(400).json({ message: 'O tipo do insumo (descrição) é obrigatório.' });
+        if (!isNotEmpty(local)) return res.status(400).json({ message: 'A localização é obrigatória.' });
+        if (!isValidFutureDate(validade)) { // Usa a função que exige data
+            return res.status(400).json({ message: 'Data de validade inválida. Use AAAA-MM-DD, não pode ser vazia ou passada.' });
         }
+        if (!isNotEmpty(numero_serial)) { // Serial agora é sempre obrigatório
+            return res.status(400).json({ message: 'O Número de Serial é obrigatório.' });
+        }
+        // --- FIM VALIDAÇÕES ---
 
         const vistoria = await Vistoria.findByIdAndEmpresa(vistoria_codigo, empresaCnpj);
-
-        // ... (restante da lógica de verificação da vistoria) ...
-        if (!vistoria) { /* ... */ }
-        if (vistoria.data_fim) { /* ... */ }
+        if (!vistoria) return res.status(404).json({ message: 'Vistoria não encontrada ou você não tem permissão.' });
+        if (vistoria.data_fim) return res.status(403).json({ message: 'Ação proibida. Vistoria já finalizada.' });
 
         await InsumoFilial.create({
-            filial_cnpj: vistoria.filial_cnpj, 
+            filial_cnpj: vistoria.filial_cnpj,
             vistoria_codigo,
-            tipo_descricao: descricao, // Nome correto vindo do body
+            tipo_descricao: descricao,
             validade: validade,
             local: local,
             descricao_item: descricao_item,
-            numero_serial: numero_serial // Passa o serial para o Model
+            numero_serial: numero_serial
         });
-
         res.status(201).json({ message: 'Insumo adicionado à vistoria com sucesso!' });
     } catch (error) {
         console.error('Erro ao adicionar insumo à vistoria:', error);
-        res.status(500).json({ message: 'Erro interno do servidor.' });
+        // Verifica erro de duplicidade que PODE ocorrer se createDirect falhar e create tentar inserir
+        if (error.code === 'ER_DUP_ENTRY') {
+             res.status(409).json({ message: 'Erro de duplicidade detectado (Serial já existe?).'});
+        } else {
+            res.status(500).json({ message: error.message || 'Erro interno do servidor.' });
+        }
     }
 };
 
@@ -227,75 +241,53 @@ exports.editarInsumo = async (req, res) => {
     try {
         const { id } = req.params;
         const { empresaCnpj } = req.user;
-        const { validade, local, descricao, numero_serial } = req.body;
+        // 'descricao' no body aqui é a descricao_item (nota), o tipo não muda na edição
+        const { validade, local, descricao, numero_serial } = req.body; 
 
-        // --- VALIDAÇÃO DO SERIAL ---
-        // 1. Busca o tipo do insumo (sem lock, apenas para validação)
-        //    Garante que o item existe e pertence à empresa.
-        const queryBuscaTipo = `
-            SELECT i.descricao as tipo_insumo 
-            FROM insumo_filial_mutavel inf
-            JOIN insumo i ON inf.insumo_codigo = i.codigo
-            JOIN filial f ON inf.filial_cnpj = f.cnpj
-            WHERE inf.codigo = ? AND f.empresa_cnpj = ?;
-        `;
+        // --- VALIDAÇÕES OBRIGATÓRIAS ---
+         if (!isNotEmpty(local)) return res.status(400).json({ message: 'A localização é obrigatória.' });
+         if (!isValidFutureDate(validade)) { // Usa a função que exige data
+            return res.status(400).json({ message: 'Data de validade inválida. Use AAAA-MM-DD, não pode ser vazia ou passada.' });
+         }
+         if (!isNotEmpty(numero_serial)) { // Serial agora é sempre obrigatório (e não editável no front)
+             return res.status(400).json({ message: 'O Número de Serial é obrigatório.' });
+         }
+        // --- FIM VALIDAÇÕES ---
+
+        // Verifica existência (mantido)
+        const queryBuscaTipo = ` SELECT i.descricao as tipo_insumo FROM insumo_filial_mutavel inf JOIN insumo i ON inf.insumo_codigo = i.codigo JOIN filial f ON inf.filial_cnpj = f.cnpj WHERE inf.codigo = ? AND f.empresa_cnpj = ?; `;
         const [rowsTipo] = await db.query(queryBuscaTipo, [id, empresaCnpj]);
-
         if (rowsTipo.length === 0) {
              return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão.' });
         }
-        const tipoInsumo = rowsTipo[0].tipo_insumo;
+        // Não precisamos mais validar serial condicionalmente aqui
 
-        // 2. Aplica a regra de obrigatoriedade do serial
-        if (tipoInsumo.toLowerCase().includes('extintor') && (!numero_serial || numero_serial.trim() === '')) {
-             return res.status(400).json({ message: 'O Número de Serial é obrigatório para extintores.' });
-        }
-        // --- FIM DA VALIDAÇÃO ---
-
-        // 3. Chama o método transacional do Model para fazer a atualização e o log
-        //    (Este método já contém a lógica de beginTransaction, commit, rollback)
-        const affectedRows = await InsumoFilial.updateAndLog(
+        // Chama a função 'update' que não loga
+        const affectedRows = await InsumoFilial.update(
             id,
             { validade, local, descricao, numero_serial },
             empresaCnpj
         );
 
-        // O método updateAndLog já lança erro se não encontrar (devido ao FOR UPDATE interno),
-        // mas mantemos uma verificação extra por segurança.
-        if (affectedRows === 0) {
-            // Tecnicamente, não deveria chegar aqui se o findById acima funcionou,
-            // a menos que algo delete o item entre a leitura e a chamada do updateAndLog.
-            throw new Error('Falha ao atualizar o insumo. O item pode ter sido removido.');
-        }
-
-        res.json({ message: 'Insumo atualizado com sucesso e histórico de alteração registrado!' });
-
+        if (affectedRows === 0) { throw new Error('Falha ao atualizar o insumo (affectedRows=0).'); }
+        res.json({ message: 'Insumo atualizado com sucesso!' });
     } catch (error) {
+        // ... (tratamento de erro mantido) ...
         console.error('Erro ao editar insumo:', error);
-        // Verifica se é o erro de lock timeout especificamente
-        if (error.code === 'ER_LOCK_WAIT_TIMEOUT') {
-             res.status(503).json({ message: 'O sistema está ocupado processando outra requisição. Por favor, tente novamente em alguns instantes.' });
-        } else {
-             // Outros erros (incluindo o 'Insumo não encontrado' do updateAndLog)
-             res.status(500).json({ message: error.message || 'Erro interno do servidor.' });
-        }
+        if (error.code === 'ER_LOCK_WAIT_TIMEOUT') { res.status(503).json({ message: 'Sistema ocupado. Tente novamente.' }); }
+        else if (error.message.includes('não encontrado')) { res.status(404).json({ message: error.message }); }
+        else { res.status(500).json({ message: error.message || 'Erro interno do servidor.' }); }
     }
-    // Não precisamos mais do finally { connection.release() } aqui.
 };
-
-
 
 exports.buscarInsumoPorId = async (req, res) => {
     try {
         const { id } = req.params;
         const { empresaCnpj } = req.user;
-
         const insumo = await InsumoFilial.findById(id, empresaCnpj);
-
         if (!insumo) {
             return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão para acessá-lo.' });
         }
-
         res.json(insumo);
     } catch (error) {
         console.error('Erro ao buscar detalhes do insumo:', error);
@@ -303,94 +295,148 @@ exports.buscarInsumoPorId = async (req, res) => {
     }
 };
 
-
-
-
 exports.adicionarInsumoDireto = async (req, res) => {
     try {
         const { cnpj: filial_cnpj } = req.params;
-        const insumoData = req.body; // Dados do modal { descricao, validade, local, descricao_item, numero_serial }
+        const insumoData = req.body;
 
-        // [NOVA VALIDAÇÃO] Verifica se é extintor e exige serial
-        if (insumoData.descricao && insumoData.descricao.toLowerCase().includes('extintor') && (!insumoData.numero_serial || insumoData.numero_serial.trim() === '')) {
-             return res.status(400).json({ message: 'O Número de Serial é obrigatório para extintores.' });
+        // --- VALIDAÇÕES OBRIGATÓRIAS ---
+        if (!isNotEmpty(insumoData.descricao)) return res.status(400).json({ message: 'O tipo do insumo (descrição) é obrigatório.' });
+        if (!isNotEmpty(insumoData.local)) return res.status(400).json({ message: 'A localização é obrigatória.' });
+        if (!isValidFutureDate(insumoData.validade)) { // Usa a função que exige data
+            return res.status(400).json({ message: 'Data de validade inválida. Use AAAA-MM-DD, não pode ser vazia ou passada.' });
         }
+        if (!isNotEmpty(insumoData.numero_serial)) { // Serial agora é sempre obrigatório
+            return res.status(400).json({ message: 'O Número de Serial é obrigatório.' });
+        }
+        // --- FIM VALIDAÇÕES ---
 
-        // Chama o model para criar o registro (que salva em ambas as tabelas)
-        await InsumoFilial.createDirect({ 
-            ...insumoData, 
-            filial_cnpj, 
-            tipo_descricao: insumoData.descricao // O campo 'descricao' do modal é o 'tipo_descricao'
-            // numero_serial já está em insumoData via spread operator (...)
+        await InsumoFilial.createDirect({
+            ...insumoData,
+            filial_cnpj,
+            tipo_descricao: insumoData.descricao
         });
-
-        res.status(201).json({ message: 'Insumo adicionado diretamente ao inventário com sucesso!' });
+        res.status(201).json({ message: 'Insumo adicionado/atualizado no inventário com sucesso!' });
     } catch (error) {
         console.error('Erro ao adicionar insumo direto:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+             res.status(409).json({ message: 'Erro de duplicidade detectado (Serial já existe?).'}); // Mensagem mais específica
+        } else {
+             res.status(500).json({ message: error.message || 'Erro interno do servidor.' });
+        }
+    }
+};
+
+exports.excluirItemInventario = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { empresaCnpj } = req.user;
+        const insumoExistente = await InsumoFilial.findById(id, empresaCnpj);
+        if (!insumoExistente) {
+            return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão para excluí-lo.' });
+        }
+        const affectedRows = await InsumoFilial.remove(id);
+        if (affectedRows === 0) {
+            return res.status(404).json({ message: 'Falha ao excluir o insumo.' });
+        }
+        res.json({ message: 'Insumo removido do inventário com sucesso! (Histórico mantido)' });
+    } catch (error) {
+        console.error('Erro ao excluir insumo:', error);
         res.status(500).json({ message: 'Erro interno do servidor.' });
     }
 };
 
 exports.buscarHistoricoInsumo = async (req, res) => {
     try {
-        const { id } = req.params; // ID da tabela insumo_filial_mutavel
-        const { empresaCnpj } = req.user; // Para garantir a propriedade
-
-        // Chama a nova função do model para buscar o histórico
+        const { id } = req.params;
+        const { empresaCnpj } = req.user;
         const historico = await InsumoFilial.findHistoryById(id, empresaCnpj);
-
         if (!historico) {
-             // findHistoryById retornará null se o item principal não for encontrado ou não pertencer à empresa
              return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão.' });
         }
-
-        res.json(historico); // Retorna o array de registros históricos
-
+        res.json(historico);
     } catch (error) {
         console.error('Erro ao buscar histórico do insumo:', error);
         res.status(500).json({ message: 'Erro interno do servidor ao buscar histórico.' });
     }
 };
 
+exports.excluirRegistroHistorico = async (req, res) => {
+    try {
+        const { historia_id } = req.params;
+        const { empresaCnpj } = req.user;
+        const affectedRows = await InsumoFilial.removeImutavelRecord(historia_id, empresaCnpj);
+        if (affectedRows === 0) {
+            throw new Error('Não foi possível excluir o registro. Pode já ter sido removido ou a vistoria finalizada.');
+        }
+        res.json({ message: 'Registro de insumo removido da vistoria com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao excluir registro histórico:', error);
+        let statusCode = 500;
+        if (error.message.includes('não encontrado') || error.message.includes('permissão')) {
+            statusCode = 404;
+        } else if (error.message.includes('finalizada')) {
+            statusCode = 403;
+        }
+        res.status(statusCode).json({ message: error.message || 'Erro interno do servidor.' });
+    }
+};
 
-exports.listarLocaisPorFilial = async (req, res) => {
+exports.gerarRelatorioInventario = async (req, res) => {
     try {
         const { cnpj: filialCnpj } = req.params;
-        // A posse da filial já foi validada pelo middleware checkFilialOwnership
-
-        // Chama a nova função do model
-        const locais = await Filial.findLocationsByFilial(filialCnpj); // Colocando no filialModel
-        res.json(locais);
-
+        const inventarioBruto = await InsumoFilial.findByFilial(filialCnpj);
+        const filialDetails = await Filial.findById(filialCnpj, req.user.empresaCnpj);
+        const inventarioOrdenado = sortInventoryByValidity(inventarioBruto);
+        const filename = `Relatorio_Inventario_${filialCnpj}_${new Date().toISOString().split('T')[0]}.pdf`;
+        console.log("[Controller] Dados antes de gerar PDF (verificar 'imagem'):",
+            inventarioOrdenado.map(item => ({
+                codigo: item.codigo,
+                descricao: item.descricao,
+                imagem_type: Buffer.isBuffer(item.imagem) ? `Buffer(${item.imagem.length})` : typeof item.imagem
+            }))
+        );
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        await createInventoryPdf(inventarioOrdenado, filialDetails, res);
     } catch (error) {
-        console.error('Erro ao listar locais da filial:', error);
-        res.status(500).json({ message: 'Erro interno do servidor ao buscar locais.' });
+        console.error('Erro ao gerar relatório de inventário:', error);
+        if (!res.headersSent) {
+             res.status(500).json({ message: 'Erro interno ao gerar o relatório.' });
+        } else {
+             console.error("Erro após início do envio do PDF. Resposta pode estar incompleta.");
+             res.end();
+        }
     }
 };
 
-
-exports.excluirItemInventario = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { empresaCnpj } = req.user;
-
-        // 1. Verifica se o insumo existe e pertence à empresa antes de excluir
-        const insumoExistente = await InsumoFilial.findById(id, empresaCnpj);
-        if (!insumoExistente) {
-            return res.status(404).json({ message: 'Insumo não encontrado ou você não tem permissão para excluí-lo.' });
+function sortInventoryByValidity(inventory) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const mapped = inventory.map(item => {
+        let sortStatus = 1;
+        let validityDate = item.validade ? parseDateAsLocal(item.validade) : null;
+        if (validityDate) {
+            const diffTime = validityDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays < 0) { sortStatus = 3; }
+            else if (diffDays <= 30) { sortStatus = 2; }
+        } else { sortStatus = 1; } // Sem validade = OK
+        return { ...item, sortStatus, validityDate };
+    });
+    mapped.sort((a, b) => {
+        if (a.sortStatus !== b.sortStatus) { return a.sortStatus - b.sortStatus; }
+        if (a.sortStatus === 1) { // OK -> Validade DESC
+             if (!a.validityDate && !b.validityDate) return 0;
+             if (!a.validityDate) return -1;
+             if (!b.validityDate) return 1;
+             return b.validityDate - a.validityDate;
+        } else { // Vencido ou Próximo -> Validade ASC
+             if (!a.validityDate && !b.validityDate) return 0;
+             if (!a.validityDate) return 1;
+             if (!b.validityDate) return -1;
+             return a.validityDate - b.validityDate;
         }
-
-        // 2. Remove APENAS da tabela mutável
-        const affectedRows = await InsumoFilial.remove(id);
-        if (affectedRows === 0) {
-            // Redundante, mas seguro
-            return res.status(404).json({ message: 'Falha ao excluir o insumo.' });
-        }
-
-        res.json({ message: 'Insumo removido do inventário com sucesso! (Histórico mantido)' });
-
-    } catch (error) {
-        console.error('Erro ao excluir insumo:', error);
-        res.status(500).json({ message: 'Erro interno do servidor.' });
-    }
-};
+    });
+    return mapped;
+}
