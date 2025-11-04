@@ -29,6 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailsForm = document.getElementById('detailsModalForm');
     const selectionGrid = selectionModal ? selectionModal.querySelector('.selection-grid') : null;
     const detailsFormContainer = detailsModal ? detailsModal.querySelector('#formInputsContainer') : null;
+    const serialSearchInput = document.getElementById('serialSearchInput');
+    const statusFilter = document.getElementById('statusFilter'); // Voltamos para statusFilter
+    const serialSearchList = document.getElementById('serialSearchList');
+    let todosOsInsumos = [];
     
     // --- NAVEGAÇÃO ---
     if (btnVerVistorias) {
@@ -117,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function carregarInsumosGerais() {
+async function carregarInsumosGerais() {
         if (!insumosGridDiv) {
             console.error("Elemento DOM para grid de insumos não encontrado.");
             return;
@@ -127,18 +131,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/insumos/filial/${filialCnpj}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Falha ao carregar os insumos.');
 
-            const inventario = await response.json();
-            insumosGridDiv.innerHTML = '';
+            todosOsInsumos = await response.json(); // Salva na variável global
             
-            if (inventario.length === 0) {
-                insumosGridDiv.innerHTML = '<p>Nenhum insumo geral cadastrado para esta filial.</p>';
-            } else {
-                inventario.forEach(item => {
-                    const card = createInsumoCard(item);
-                    insumosGridDiv.appendChild(card);
+            // --- INÍCIO DA LÓGICA DE POPULAR FILTROS ---
+            
+            const seriais = new Set();
+            // Removemos 'locais' e 'tipos'
+
+            todosOsInsumos.forEach(item => {
+                if (item.numero_serial) seriais.add(item.numero_serial);
+            });
+
+            // 1. Popula o Datalist (sugestões) de Seriais
+            if (serialSearchList) {
+                serialSearchList.innerHTML = ''; // Limpa sugestões antigas
+                seriais.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s;
+                    serialSearchList.appendChild(option);
                 });
             }
+
+            // 2. A lógica de popular o Select de Status foi removida (é estático).
+            
+            // --- FIM DA LÓGICA DE POPULAR FILTROS ---
+
+            // Chama aplicarFiltros() para renderizar a lista inicial (já ordenada)
+            aplicarFiltros(); 
+
         } catch (error) {
+            todosOsInsumos = []; // Limpa em caso de erro
             insumosGridDiv.innerHTML = `<p>${error.message}</p>`;
         }
     }
@@ -146,34 +168,95 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * [ALTERADO] Adiciona o N° de Serial se o item for um extintor.
      */
-    function createInsumoCard(item) {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-    
-        if (item.status) {
+            function createInsumoCard(item) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            
+            if (item.status) {
             card.classList.add(item.status);
-        }
-    
-        // Lógica condicional para N° Serial
-        let serialHtml = '';
-        if (item.descricao && item.descricao.toLowerCase().includes('extintor') && item.numero_serial) {
+            }
+            
+            // --- ALTERAÇÃO INICIA AQUI ---
+            // Lógica condicional removida. O N° Serial agora é exibido para todos os itens.
+            let serialHtml = '';
+                    if (item.numero_serial) {
             serialHtml = `<p><strong>Nº Serial:</strong> ${item.numero_serial}</p>`;
-        } else if (item.descricao && item.descricao.toLowerCase().includes('extintor')) {
+                    } else {
             serialHtml = `<p><strong>Nº Serial:</strong> N/A</p>`;
-        }
-    
-        card.innerHTML = `
+                    }
+            // --- ALTERAÇÃO TERMINA AQUI ---
+            
+            card.innerHTML = `
             <img src="${item.imagem || 'images/logotipo.png'}" alt="${item.descricao}">
             <h3>${item.descricao}</h3>
             ${serialHtml} <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
             <p><strong>Válido até:</strong> ${item.validade_formatada}</p>
             
             <div class="card-footer">
-                <a href="insumo-detalhe.html?id=${item.codigo}" class="btn-details">Ver Detalhes</a>
+            <a href="insumo-detalhe.html?id=${item.codigo}" class="btn-details">Ver Detalhes</a>
             </div>
-        `;
-        return card;
+            `;
+            return card;
+            }
+
+            function renderizarInsumos(listaInsumos) {
+        if (!insumosGridDiv) return;
+        insumosGridDiv.innerHTML = ''; // Limpa o grid
+
+        if (listaInsumos.length === 0) {
+            insumosGridDiv.innerHTML = '<p>Nenhum insumo encontrado para este filtro.</p>';
+        } else {
+            listaInsumos.forEach(item => {
+                const card = createInsumoCard(item);
+                insumosGridDiv.appendChild(card);
+            });
+        }
     }
+
+    /**
+     * [NOVA FUNÇÃO]
+     * É chamada sempre que o usuário digita ou muda o filtro de status.
+     */
+function aplicarFiltros() {
+        const termoBusca = serialSearchInput.value.toLowerCase();
+        const status = statusFilter.value; // Voltamos para statusFilter
+
+        let insumosFiltrados = todosOsInsumos;
+
+        // 1. Filtra por Status (Select)
+        if (status !== 'todos') {
+            insumosFiltrados = insumosFiltrados.filter(item => item.status === status);
+        }
+
+        // 2. Filtra por Serial (Input: Apenas N° Serial)
+        if (termoBusca) {
+            insumosFiltrados = insumosFiltrados.filter(item => {
+                const serial = item.numero_serial || '';
+                return serial.toLowerCase().includes(termoBusca); 
+            });
+        }
+
+        // 3. Ordena pela data de validade (MAIS PRÓXIMA PRIMEIRO - ASC)
+        // Esta ordenação é aplicada a todos os resultados, como solicitado.
+        insumosFiltrados.sort((a, b) => {
+            // Usa a função parseDateAsLocal que já existe no seu arquivo
+            const dateA = parseDateAsLocal(a.validade);
+            const dateB = parseDateAsLocal(b.validade);
+
+            // Itens sem data de validade (null) vão para o final
+            if (dateA && dateB) return dateA - dateB; // Ordena da data mais antiga para a mais nova
+            if (dateA) return -1; // dateA tem data, dateB não (A vem primeiro)
+            if (dateB) return 1;  // dateB tem data, dateA não (B vem primeiro)
+            return 0; // Ambos são null
+        });
+
+        // 4. Renderiza o resultado final
+        renderizarInsumos(insumosFiltrados);
+    }
+
+
+
+
 
         function closeModal() {
          if (selectionModal) selectionModal.style.display = 'none';
@@ -184,6 +267,14 @@ document.addEventListener('DOMContentLoaded', () => {
          const locationDatalist = document.getElementById('location-list-direto'); // Limpa locais
          if (locationDatalist) locationDatalist.innerHTML = ''; // Limpa locais
      }
+// --- INÍCIO DA ADIÇÃO: LISTENERS DOS FILTROS (VERSÃO RESTAURADA) ---
+    if (serialSearchInput) {
+        serialSearchInput.addEventListener('input', aplicarFiltros); 
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', aplicarFiltros);
+    }
+    // --- FIM DA ADIÇÃO ---
 
     
     document.querySelectorAll('#selectionModal .modal-close-btn, #selectionModal .btn-cancel, #detailsModal .modal-close-btn, #detailsModal .btn-cancel')
@@ -230,95 +321,131 @@ async function fetchLocations(cnpj) {
         }
     }
 
-async function openDetailsModal(descricaoInsumo) {
-        if (!detailsModal || !detailsFormContainer) {
-             console.error("Elementos do modal de detalhes não encontrados.");
-             return;
-        }
-        closeModal(); // Fecha outros modais se abertos
-        detailsModal.querySelector('#detailsModalTitle').textContent = `Detalhes para: ${descricaoInsumo}`;
-        
-        const hoje = new Date().toISOString().split('T')[0];
-        
-        // --- BUSCA DADOS PARA AUTOCOMPLETE ---
-        let seriais = [];
-        let locais = [];
+                async function openDetailsModal(descricaoInsumo) {
+                if (!detailsModal || !detailsFormContainer) {
+                 console.error("Elementos do modal de detalhes não encontrados.");
+                 return;
+                }
+                closeModal(); // Fecha outros modais se abertos
+                detailsModal.querySelector('#detailsModalTitle').textContent = `Detalhes para: ${descricaoInsumo}`;
 
-        if (descricaoInsumo.toLowerCase().includes('extintor') && filialCnpj) {
-            try {
+                const hoje = new Date().toISOString().split('T')[0];
+
+                // --- BUSCA DADOS PARA AUTOCOMPLETE ---
+                let seriais = [];
+                let locais = [];
+
+                // --- ALTERAÇÃO INICIA AQUI ---
+                        // A condição "if includes('extintor')" foi REMOVIDA.
+                        // Sempre busca seriais, pois todos os insumos agora os utilizam.
+                if (filialCnpj) {
+                try {
                 const response = await fetch(`/api/insumos/filial/${filialCnpj}/seriais`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (response.ok) seriais = await response.json();
-            } catch (error) { console.warn("Não foi possível carregar seriais:", error); }
-        }
-        if (filialCnpj) {
-            locais = await fetchLocations(filialCnpj); // Usa a função helper
-        }
-        // --- FIM DA BUSCA ---
+                } catch (error) { console.warn("Não foi possível carregar seriais:", error); }
+                            
+                            // Busca locais (lógica original mantida)
+                locais = await fetchLocations(filialCnpj); // Usa a função helper
+                }
+                // --- ALTERAÇÃO TERMINA AQUI ---
 
 
-        // --- MONTAGEM DO HTML ---
-        let serialInputHtml = '';
-        const serialDatalistId = 'serial-list-direto';
-        let serialDatalistHtml = `<datalist id="${serialDatalistId}">`;
-        seriais.forEach(s => { serialDatalistHtml += `<option value="${s}"></option>`; });
-        serialDatalistHtml += '</datalist>';
+                // --- MONTAGEM DO HTML ---
+                let serialInputHtml = '';
+                const serialDatalistId = 'serial-list-direto';
+                let serialDatalistHtml = `<datalist id="${serialDatalistId}">`;
+                seriais.forEach(s => { serialDatalistHtml += `<option value="${s}"></option>`; });
+                serialDatalistHtml += '</datalist>';
 
-        if (descricaoInsumo.toLowerCase().includes('extintor')) {
-            serialInputHtml = `
+                // --- ALTERAÇÃO INICIA AQUI ---
+                        // A condição "if includes('extintor')" foi REMOVIDA.
+                        // O campo N° Serial agora é padrão para todos os insumos.
+                serialInputHtml = `
                 <div class="form-group">
-                    <label for="numero_serial">Nº Serial (Obrigatório):</label> 
-                    <input type="text" id="numero_serial" name="numero_serial" list="${serialDatalistId}" autocomplete="off" required> 
+                <label for="numero_serial">Nº Serial (Obrigatório):</label> 
+                <input type="text" id="numero_serial" name="numero_serial" list="${serialDatalistId}" autocomplete="off" required> 
                 </div>
-            `;
-        }
+                `;
+                // --- ALTERAÇÃO TERMINA AQUI ---
 
-        const locationDatalistId = 'location-list-direto';
-        let locationDatalistHtml = `<datalist id="${locationDatalistId}">`;
-        locais.forEach(l => { locationDatalistHtml += `<option value="${l}"></option>`; });
-        locationDatalistHtml += '</datalist>';
+                const locationDatalistId = 'location-list-direto';
+                let locationDatalistHtml = `<datalist id="${locationDatalistId}">`;
+                locais.forEach(l => { locationDatalistHtml += `<option value="${l}"></option>`; });
+                locationDatalistHtml += '</datalist>';
 
-        detailsFormContainer.innerHTML = `
-            <input type="hidden" name="descricao" value="${descricaoInsumo}"> 
-            ${serialInputHtml} 
-            <div class="form-group">
+                detailsFormContainer.innerHTML = `
+                <input type="hidden" name="descricao" value="${descricaoInsumo}"> 
+                ${serialInputHtml} 
+                <div class="form-group">
                 <label for="local">Localização (Obrigatório):</label>
                 <input type="text" id="local" name="local" list="${locationDatalistId}" required autocomplete="off"> </div>
-            <div class="form-group">
+                <div class="form-group">
                 <label for="descricao_item">Descrição Adicional (Opcional):</label>
                 <textarea id="descricao_item" name="descricao_item" rows="3" maxlength="255"></textarea>
-            </div>
-            <div class="form-group">
+                </div>
+                <div class="form-group">
                 <label for="validade">Data de Validade:</label>
                 <input type="date" id="validade" name="validade" min="${hoje}">
-            </div>
-            ${serialDatalistHtml} 
-            ${locationDatalistHtml} `;
-        // --- FIM DA MONTAGEM ---
+                </div>
+                ${serialDatalistHtml} 
+                ${locationDatalistHtml} `;
+                // --- FIM DA MONTAGEM ---
 
-        const validadeInput = detailsFormContainer.querySelector('#validade');
-        if (validadeInput) {
-             validadeInput.addEventListener('input', () => {
-                 const ano = validadeInput.value.split('-')[0];
-                 if (ano && ano.length > 4) {
-                     alert('O ano deve ter no máximo 4 dígitos.');
-                     validadeInput.value = '';
-                 }
-             });
-        }
-        detailsModal.style.display = 'flex';
+                // --- ANEXAR VALIDAÇÕES ---
+                const serialInput = detailsFormContainer.querySelector('#numero_serial');
+                const localInput = detailsFormContainer.querySelector('#local');
+                const validadeInput = detailsFormContainer.querySelector('#validade');
+
+                if (serialInput) {
+                serialInput.addEventListener('blur', () => validateRequired(serialInput, 'Nº Serial'));
+                }
+                if (localInput) {
+                localInput.addEventListener('blur', () => validateRequired(localInput, 'Localização'));
+                }
+                if (validadeInput) {
+                 validadeInput.addEventListener('blur', () => validateDate(validadeInput));
+
+                 validadeInput.addEventListener('input', () => {
+                 const ano = validadeInput.value.split('-')[0];
+                 if (ano && ano.length > 4) {
+                 alert('O ano deve ter no máximo 4 dígitos.');
+                 validadeInput.value = '';
+                 }
+                 });
+                }
+                detailsModal.style.display = 'flex';
+                }
+
+if (btnAdicionarInsumoDireto) {
+        btnAdicionarInsumoDireto.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log("Botão Adicionar Insumo Direto clicado!"); 
+            openCategorySelectionModal(); 
+        });
+    } else {
+        console.error("Botão #btnAdicionarInsumoDireto não encontrado!"); 
     }
-    if (btnAdicionarInsumoDireto) {
-    btnAdicionarInsumoDireto.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log("Botão Adicionar Insumo Direto clicado!"); // <-- PONTO DE DEBUG 1
-        openCategorySelectionModal(); 
-    });
-} else {
-    console.error("Botão #btnAdicionarInsumoDireto não encontrado!"); // <-- PONTO DE DEBUG 2
-}
-if (detailsForm) {
+    if (detailsForm) {
         detailsForm.addEventListener('submit', async (event) => {
             event.preventDefault(); // ESSENCIAL: Impede o reload da página
+
+            // --- VALIDAR ANTES DE ENVIAR ---
+            let isValid = true;
+            const serialInput = detailsForm.querySelector('#numero_serial');
+            const localInput = detailsForm.querySelector('#local');
+            const validadeInput = detailsForm.querySelector('#validade');
+
+            if (serialInput) {
+                isValid = validateRequired(serialInput, 'Nº Serial') && isValid;
+            }
+            isValid = validateRequired(localInput, 'Localização') && isValid;
+            isValid = validateDate(validadeInput) && isValid;
+
+            if (!isValid) {
+                return; // Impede o envio do formulário
+            }
+            // --- FIM DA VALIDAÇÃO ---
+            
             const formData = new FormData(detailsForm);
             const data = Object.fromEntries(formData.entries());
 
@@ -329,17 +456,12 @@ if (detailsForm) {
                     alert('Ano da validade inválido. Use 4 dígitos.');
                     return; // Impede o envio
                 }
-                const hoje = new Date().toISOString().split('T')[0];
-                if (data.validade < hoje) {
-                    alert('A data de validade não pode ser anterior à data atual.');
-                    return; // Impede o envio
-                }
+                // A validação de data passada já foi feita pelo validateDate()
             }
             // --- Fim Validações ---
 
 
             // --- Envio para a API ---
-            // Certifique-se que 'filialCnpj' está acessível neste escopo (deve estar, pois foi definido no início do DOMContentLoaded)
             if (!filialCnpj) {
                  alert("Erro crítico: CNPJ da filial não encontrado para o envio. Recarregue a página.");
                  return;
@@ -366,7 +488,6 @@ if (detailsForm) {
                 }
                 
                 // Se a API retornou sucesso:
-                alert(result.message || 'Insumo adicionado/atualizado com sucesso!');
                 closeModal();           // Fecha o modal
                 carregarInsumosGerais(); // Recarrega a lista de insumos na página ATUAL
 
@@ -381,8 +502,7 @@ if (detailsForm) {
         console.error("Elemento do formulário #detailsModalForm não encontrado!");
     }
 
-
-
+    
 
 
     function inicializarPagina() {
@@ -401,12 +521,71 @@ if (detailsForm) {
     });
 });
 
+// A sua função atual (com o bug) se parece com isto:
 function parseDateAsLocal(dateString) {
     if (!dateString) return null;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        console.error("Formato de data inválido recebido:", dateString);
+
+    // --- INÍCIO DA CORREÇÃO ---
+    // O BD envia '2029-12-12T03:00:00.000Z'
+    // Nós pegamos apenas a parte da data (antes do 'T')
+    const dateOnly = dateString.split('T')[0];
+    // --- FIM DA CORREÇÃO ---
+
+    // Agora o teste regex original funciona com a data limpa
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) { 
+        // O console.error que você está vendo
+        console.error("Formato de data inválido recebido:", dateString); 
         return null;
     }
-    const [year, month, day] = dateString.split('-').map(Number);
+    
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    // O mês em JavaScript é 0-indexado
     return new Date(year, month - 1, day); 
+}
+
+
+// --- FUNÇÕES AUXILIARES DE VALIDAÇÃO ---
+function displayError(inputElement, message) {
+    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error-message';
+        errorDiv.style.color = '#d32f2f';
+        errorDiv.style.fontSize = '0.9em';
+        errorDiv.style.marginTop = '5px';
+        inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
+    }
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function clearError(inputElement) {
+    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+    }
+}
+
+function validateRequired(inputElement, fieldName) {
+    if (!inputElement || inputElement.value.trim() === '') {
+        displayError(inputElement, `${fieldName} é obrigatório.`);
+        return false;
+    }
+    clearError(inputElement);
+    return true;
+}
+
+function validateDate(inputElement) {
+    if (!inputElement || inputElement.value.trim() === '') {
+        displayError(inputElement, 'Data de validade é obrigatória.');
+        return false;
+    }
+    const hoje = new Date().toISOString().split('T')[0];
+    if (inputElement.value < hoje) {
+        displayError(inputElement, 'A data não pode ser anterior a hoje.');
+        return false;
+    }
+    clearError(inputElement);
+    return true;
 }

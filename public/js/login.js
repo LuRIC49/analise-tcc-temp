@@ -8,16 +8,42 @@ document.addEventListener('DOMContentLoaded', () => {
     let notificationDiv = null;
 
 
-    function showNotification(message, type) {
+function showNotification(message, type) {
         if (notificationDiv) {
             notificationDiv.remove();
         }
+
         notificationDiv = document.createElement('div');
-        notificationDiv.className = `notification-message ${type}`;
+        // Usamos as classes para estilização (cor), como você já faz
+        notificationDiv.classList.add('notification-message', type); 
         notificationDiv.textContent = message;
+
+        // Adicionamos estilos inline para garantir o posicionamento
+        notificationDiv.style.position = 'fixed'; // Posição fixa na tela
+        notificationDiv.style.left = '50%';
+        notificationDiv.style.top = '50%';
+        notificationDiv.style.transform = 'translate(-50%, -50%)';
+        notificationDiv.style.padding = '20px';
+        notificationDiv.style.borderRadius = '5px';
+        notificationDiv.style.zIndex = '2000'; // Garante que fique na frente
+        notificationDiv.style.display = 'block';
+
+        // Estilos específicos de tipo (pode ser redundante se o CSS já fizer)
+        if (type === 'success') {
+            notificationDiv.style.backgroundColor = '#d4edda';
+            notificationDiv.style.color = '#155724';
+        } else if (type === 'error') {
+            notificationDiv.style.backgroundColor = '#f8d7da';
+            notificationDiv.style.color = '#721c24';
+        }
+
         document.body.appendChild(notificationDiv);
+
         setTimeout(() => {
-            if (notificationDiv) notificationDiv.remove();
+            if (notificationDiv) {
+                notificationDiv.remove();
+                notificationDiv = null;
+            }
         }, 3000);
     }
 

@@ -4,8 +4,29 @@ const inventarioController = require('../controllers/inventarioController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { checkFilialOwnership } = require('../middleware/autorizacaoMiddleware');
 
+// --- Importe a configuração do multer ---
+// (Ajuste o caminho se o seu 'multerConfig.js' estiver em outro lugar)
+const upload = require('../config/multerConfig'); 
+
 // Rota para buscar os TIPOS de insumo (Extintor, Mangueira, etc)
-router.get('/tipos', authenticateToken, inventarioController.listarTiposDeInsumos);
+router.get('/tipos', authenticateToken, inventarioController.listarTiposDeInsumos); // R
+
+// --- INÍCIO DAS NOVAS ROTAS ---
+
+// C - Criar um novo tipo de insumo (com upload de imagem)
+router.post('/tipos', authenticateToken, upload.single('imagem'), inventarioController.criarTipoInsumo);
+
+// R - Buscar UM tipo de insumo por ID
+router.get('/tipos/:id', authenticateToken, inventarioController.buscarTipoInsumoPorId);
+
+// U - Atualizar um tipo de insumo (com upload de imagem)
+router.put('/tipos/:id', authenticateToken, upload.single('imagem'), inventarioController.atualizarTipoInsumo);
+
+// D - Excluir um tipo de insumo
+router.delete('/tipos/:id', authenticateToken, inventarioController.excluirTipoInsumo);
+
+// --- FIM DAS NOVAS ROTAS ---
+
 
 // Rota para buscar UM insumo específico pelo seu ID (da tabela mutavel)
 router.get('/:id', authenticateToken, inventarioController.buscarInsumoPorId);

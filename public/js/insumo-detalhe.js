@@ -43,6 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const editModalCloseBtn = editModal.querySelector('.modal-close-btn');
     const editModalCancelBtn = editModal.querySelector('.btn-cancel');
 
+    if (editLocal) {
+        editLocal.addEventListener('blur', () => validateRequired(editLocal, 'Localização'));
+    }
+    if (editValidade) {
+        // Nota: A validação de data aqui também checa se está vazio
+        editValidade.addEventListener('blur', () => validateDate(editValidade));
+    }
+
     const btnVerHistorico = document.getElementById('btnVerHistorico');
     const historyModal = document.getElementById('historyModal');
     const historyModalBody = document.getElementById('historyModalBody');
@@ -50,6 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyModalCloseXBtn = document.getElementById('historyModalCloseXBtn'); // Se você manteve o X
 
     let currentInsumoData = null; // Para guardar os dados atuais para edição]
+
+    
 
 
     // [NOVO] Função para abrir o modal de histórico
@@ -139,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
      });
 
     // --- FUNÇÕES DE CARREGAMENTO ---
-    async function carregarDetalhesInsumo() {
+async function carregarDetalhesInsumo() {
         try {
             const response = await fetch(`/api/insumos/${insumoId}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) {
@@ -158,13 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
             insumoValidade.textContent = insumo.validade_formatada; 
             insumoDescricao.textContent = insumo.descricao || 'Nenhuma descrição adicional.';
 
-            // [NOVO] Lógica para exibir N° Serial
-            if (insumo.tipo_insumo.toLowerCase().includes('extintor')) {
-                if (insumoSerial) insumoSerial.textContent = insumo.numero_serial || 'Não informado';
-                if (serialDisplayRow) serialDisplayRow.style.display = 'block';
-            } else {
-                if (serialDisplayRow) serialDisplayRow.style.display = 'none';
-            }
+            // --- ALTERAÇÃO INICIA AQUI ---
+            // A condição "if includes('extintor')" foi REMOVIDA.
+            // O N° Serial agora é exibido para todos os insumos.
+            if (insumoSerial) insumoSerial.textContent = insumo.numero_serial || 'Não informado';
+            if (serialDisplayRow) serialDisplayRow.style.display = 'block';
+            // --- ALTERAÇÃO TERMINA AQUI ---
 
         } catch (error) {
             document.querySelector('main').innerHTML = `<h1>Erro: ${error.message}</h1>`;
@@ -199,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * [ALTERADO] Agora é 'async' e busca a lista de seriais para o autocomplete.
      */
-    const openEditModal = async () => {
+const openEditModal = async () => {
         if (!currentInsumoData) return;
         editModalTitle.textContent = `Editar Insumo: ${currentInsumoData.tipo_insumo}`;
 
@@ -211,31 +220,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const hoje = new Date().toISOString().split('T')[0];
         editValidade.setAttribute('min', hoje);
 
-if (currentInsumoData.tipo_insumo.toLowerCase().includes('extintor')) {
-            if (editSerialGroup) editSerialGroup.style.display = 'block';
-            if (editSerialInput) {
-                 editSerialInput.value = currentInsumoData.numero_serial || '';
-                 editSerialInput.required = true; 
-                 editSerialInput.readOnly = true; // <<-- ADICIONAR ESTA LINHA
-                 // Opcional: Adicionar um estilo visual para indicar que não é editável
-                 editSerialInput.style.backgroundColor = '#e9ecef'; // Cor de fundo cinza claro
-                 editSerialInput.style.cursor = 'not-allowed'; 
-            }
-            // ... (busca e preenchimento do datalist - pode ser removido se não editável) ...
-             // Como não é editável, podemos remover a busca do datalist para simplificar:
-             if (serialDatalistEdit) {
-                 serialDatalistEdit.innerHTML = ''; // Limpa caso houvesse algo
-             }
-
-        } else {
-             if (editSerialGroup) editSerialGroup.style.display = 'none';
-             if (editSerialInput) {
-                  editSerialInput.required = false; 
-                  editSerialInput.readOnly = false; // Garante que não seja readonly para outros tipos
-                  editSerialInput.style.backgroundColor = ''; // Restaura estilo
-                  editSerialInput.style.cursor = ''; 
-             }
+        // --- ALTERAÇÃO INICIA AQUI ---
+        // A condição "if includes('extintor')" foi REMOVIDA.
+        // O campo N° Serial (readonly) agora é exibido para todos os insumos.
+        if (editSerialGroup) editSerialGroup.style.display = 'block';
+        if (editSerialInput) {
+             editSerialInput.value = currentInsumoData.numero_serial || '';
+             editSerialInput.required = true; 
+             editSerialInput.readOnly = true; // <<-- Mantém não editável
+             editSerialInput.style.backgroundColor = '#e9ecef'; 
+             editSerialInput.style.cursor = 'not-allowed'; 
         }
+        if (serialDatalistEdit) {
+             serialDatalistEdit.innerHTML = ''; // Limpa datalist
+        }
+        // --- ALTERAÇÃO TERMINA AQUI ---
         
         editValidade.addEventListener('input', () => {
             const ano = editValidade.value.split('-')[0];
@@ -247,7 +246,7 @@ if (currentInsumoData.tipo_insumo.toLowerCase().includes('extintor')) {
 
         editModal.style.display = 'flex';
     };
-
+    
 const closeEditModal = () => {
         editModal.style.display = 'none';
         editForm.reset();
@@ -266,22 +265,31 @@ const closeEditModal = () => {
     editModalCloseBtn.addEventListener('click', closeEditModal);
     editModalCancelBtn.addEventListener('click', closeEditModal);
 
-    editForm.addEventListener('submit', async (event) => {
+editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+
+        // --- INÍCIO DA MODIFICAÇÃO: VALIDAR ANTES DE ENVIAR ---
+        let isValid = true;
+        // O serial é read-only, então não validamos, conforme sua instrução.
+        isValid = validateRequired(editLocal, 'Localização') && isValid;
+        isValid = validateDate(editValidade) && isValid;
+
+        if (!isValid) {
+            return; // Impede o envio do formulário
+        }
+        // --- FIM DA MODIFICAÇÃO ---
+
         const formData = new FormData(editForm);
         const data = Object.fromEntries(formData.entries());
 
+        // Esta validação de 4 dígitos é redundante agora, mas não prejudicial.
         if (data.validade) {
             const ano = data.validade.split('-')[0];
             if (ano.length !== 4) {
                 alert('Ano da validade inválido. Use 4 dígitos.');
                 return; 
             }
-            const hoje = new Date().toISOString().split('T')[0];
-            if (data.validade < hoje) {
-                alert('A data de validade não pode ser anterior à data atual.');
-                return;
-            }
+            // A validação de data passada já foi feita pelo validateDate()
         }
 
         try {
@@ -297,7 +305,6 @@ const closeEditModal = () => {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
 
-            alert(result.message);
             closeEditModal();
             carregarDetalhesInsumo(); // Recarrega os detalhes da página
 
@@ -317,3 +324,52 @@ const closeEditModal = () => {
         }
     });
 });
+
+
+
+
+// --- FUNÇÕES AUXILIARES DE VALIDAÇÃO ---
+function displayError(inputElement, message) {
+    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error-message';
+        errorDiv.style.color = '#d32f2f';
+        errorDiv.style.fontSize = '0.9em';
+        errorDiv.style.marginTop = '5px';
+        inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
+    }
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function clearError(inputElement) {
+    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+    }
+}
+
+function validateRequired(inputElement, fieldName) {
+    if (!inputElement || inputElement.value.trim() === '') {
+        displayError(inputElement, `${fieldName} é obrigatório.`);
+        return false;
+    }
+    clearError(inputElement);
+    return true;
+}
+
+function validateDate(inputElement) {
+    if (!inputElement || inputElement.value.trim() === '') {
+        displayError(inputElement, 'Data de validade é obrigatória.');
+        return false;
+    }
+    const hoje = new Date().toISOString().split('T')[0];
+    if (inputElement.value < hoje) {
+        displayError(inputElement, 'A data não pode ser anterior a hoje.');
+        return false;
+    }
+    clearError(inputElement);
+    return true;
+}

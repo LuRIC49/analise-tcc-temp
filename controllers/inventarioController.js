@@ -113,26 +113,83 @@ exports.finalizarVistoria = async (req, res) => {
 };
 
 exports.excluirVistoria = async (req, res) => {
+    let connection; // Definir a conexão no escopo mais alto
     try {
-        const { id } = req.params;
+        const { id: vistoria_codigo } = req.params; // Renomear para clareza
         const { empresaCnpj } = req.user;
-        const vistoria = await Vistoria.findByIdAndEmpresa(id, empresaCnpj);
-        if (!vistoria) {
-            return res.status(404).json({ message: 'Vistoria não encontrada ou você não tem permissão para excluí-la.' });
+
+        connection = await db.getConnection(); // Pegar conexão para a transação
+        await connection.beginTransaction(); // Iniciar transação
+
+        // 1. Verificar propriedade e status (usando a conexão da transação)
+        // Adicionamos 'FOR UPDATE' para travar a linha da vistoria
+        const [rowsVistoria] = await connection.query(
+            `SELECT v.data_fim FROM vistoria AS v
+             JOIN filial AS f ON v.filial_cnpj = f.cnpj
+             WHERE v.codigo = ? AND f.empresa_cnpj = ? FOR UPDATE;`,
+            [vistoria_codigo, empresaCnpj]
+        );
+
+        if (rowsVistoria.length === 0) {
+            throw new Error('Vistoria não encontrada ou você não tem permissão para excluí-la.');
         }
-        if (vistoria.data_fim) {
-            return res.status(403).json({ message: 'Ação proibida. Não é possível excluir uma vistoria finalizada.' });
+        if (rowsVistoria[0].data_fim) {
+            throw new Error('Ação proibida. Não é possível excluir uma vistoria finalizada.');
         }
-        if (typeof Vistoria.remove !== 'function') {
-             const [result] = await db.execute('DELETE FROM vistoria WHERE codigo = ?', [id]);
-             if(result.affectedRows === 0) throw new Error('Falha ao remover a vistoria.');
-        } else {
-             await Vistoria.remove(id);
+
+        // 2. [NOVO] Encontrar os IDs dos itens em 'mutavel' que estão ligados a esta vistoria
+        // A ligação é feita pela "chave" (cnpj, insumo_codigo, serial)
+        const querySelectMutavel = `
+            SELECT mut.codigo 
+            FROM insumo_filial_mutavel AS mut
+            JOIN insumo_filial_vistoria_imutavel AS imu
+              ON mut.filial_cnpj = imu.filial_cnpj
+              AND mut.insumo_codigo = imu.insumo_codigo
+              AND mut.numero_serial <=> imu.numero_serial
+            WHERE imu.vistoria_codigo = ?;
+        `;
+        const [rowsMutavel] = await connection.query(querySelectMutavel, [vistoria_codigo]);
+
+        // 3. [NOVO] Excluir os itens encontrados da tabela 'mutavel'
+        if (rowsMutavel.length > 0) {
+            const codigosParaDeletar = rowsMutavel.map(row => row.codigo);
+            const queryDeleteMutavel = 'DELETE FROM insumo_filial_mutavel WHERE codigo IN (?)';
+            await connection.query(queryDeleteMutavel, [codigosParaDeletar]);
+            console.log(`[excluirVistoria] Excluídos ${codigosParaDeletar.length} itens da tabela MUTAVEL.`);
         }
-        res.status(200).json({ message: 'Vistoria e seus insumos foram excluídos com sucesso!' });
+
+        // 4. Excluir a vistoria principal.
+        // O 'ON DELETE CASCADE' do DB cuidará de excluir os registros da 'imutavel'.
+        const [resultDeleteVistoria] = await connection.execute(
+            'DELETE FROM vistoria WHERE codigo = ?', 
+            [vistoria_codigo]
+        );
+
+        if (resultDeleteVistoria.affectedRows === 0) {
+            throw new Error('Falha ao remover a vistoria (affectedRows=0).');
+        }
+
+        // 5. Se tudo deu certo, comitar a transação
+        await connection.commit();
+        
+        res.status(200).json({ message: 'Vistoria e todos os seus insumos associados (no inventário e no histórico) foram excluídos com sucesso!' });
+
     } catch (error) {
+        // 6. Se algo deu errado, reverter (rollback)
+        if (connection) await connection.rollback(); 
         console.error('Erro ao excluir vistoria:', error);
-        res.status(500).json({ message: 'Erro interno do servidor.' });
+        
+        let statusCode = 500;
+        if (error.message.includes('não encontrada') || error.message.includes('permissão')) {
+            statusCode = 404;
+        } else if (error.message.includes('finalizada')) {
+            statusCode = 403;
+        }
+        
+        res.status(statusCode).json({ message: error.message || 'Erro interno do servidor.' });
+    } finally {
+        // 7. Sempre liberar a conexão
+        if (connection) connection.release(); 
     }
 };
 
@@ -198,7 +255,7 @@ exports.buscarDetalhesVistoria = async (req, res) => {
 exports.adicionarInsumoAVistoria = async (req, res) => {
     try {
         const { id: vistoria_codigo } = req.params;
-        const { empresaCnpj } = req.user;
+        const { empresaCnpj } = req.user; // Mantemos para verificar a VISTORIA
         const { descricao, validade, local, descricao_item, numero_serial } = req.body;
 
         // --- VALIDAÇÕES OBRIGATÓRIAS ---
@@ -224,6 +281,7 @@ exports.adicionarInsumoAVistoria = async (req, res) => {
             local: local,
             descricao_item: descricao_item,
             numero_serial: numero_serial
+            // REMOVEMOS 'empresaCnpj: empresaCnpj'
         });
         res.status(201).json({ message: 'Insumo adicionado à vistoria com sucesso!' });
     } catch (error) {
@@ -298,6 +356,7 @@ exports.buscarInsumoPorId = async (req, res) => {
 exports.adicionarInsumoDireto = async (req, res) => {
     try {
         const { cnpj: filial_cnpj } = req.params;
+        // Não precisamos do 'empresaCnpj' aqui, pois o middleware 'checkFilialOwnership' já protegeu a rota
         const insumoData = req.body;
 
         // --- VALIDAÇÕES OBRIGATÓRIAS ---
@@ -315,6 +374,7 @@ exports.adicionarInsumoDireto = async (req, res) => {
             ...insumoData,
             filial_cnpj,
             tipo_descricao: insumoData.descricao
+            // REMOVEMOS 'empresaCnpj: empresaCnpj'
         });
         res.status(201).json({ message: 'Insumo adicionado/atualizado no inventário com sucesso!' });
     } catch (error) {
@@ -407,6 +467,115 @@ exports.gerarRelatorioInventario = async (req, res) => {
              console.error("Erro após início do envio do PDF. Resposta pode estar incompleta.");
              res.end();
         }
+    }
+};
+
+
+// Cole estas funções ao final do arquivo inventarioController.js
+
+/**
+ * Busca um único tipo de insumo por ID.
+ */
+exports.buscarTipoInsumoPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const tipoInsumo = await Insumo.findById(id);
+        if (!tipoInsumo) {
+            return res.status(404).json({ message: 'Tipo de insumo não encontrado.' });
+        }
+        res.json(tipoInsumo);
+    } catch (error) {
+        console.error('Erro ao buscar tipo de insumo:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+
+exports.criarTipoInsumo = async (req, res) => {
+    try {
+        const { descricao } = req.body;
+        if (!descricao || descricao.trim() === '') {
+            return res.status(400).json({ message: 'A descrição é obrigatória.' });
+        }
+
+        // --- INÍCIO DA VALIDAÇÃO (BACKEND) ---
+        if (!req.file) {
+            // Se o 'req.file' (do multer) não existir, rejeita a criação.
+            return res.status(400).json({ message: 'A imagem é obrigatória para o cadastro.' });
+        }
+        // Agora 'null' não é mais uma opção de caminho
+        const imagemPath = `uploads/${req.file.filename}`;
+        // --- FIM DA VALIDAÇÃO ---
+
+        const novoId = await Insumo.createType(descricao, imagemPath); 
+        res.status(201).json({ message: 'Tipo de insumo criado com sucesso!', id: novoId });
+
+    } catch (error) {
+        console.error('Erro ao criar tipo de insumo:', error);
+        if (error.message.includes('Já existe')) {
+            return res.status(409).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+exports.atualizarTipoInsumo = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { descricao } = req.body;
+        
+        if (!descricao || descricao.trim() === '') {
+            return res.status(400).json({ message: 'A descrição é obrigatória.' });
+        }
+
+        let imagemPath;
+        if (req.file) {
+            imagemPath = `uploads/${req.file.filename}`;
+        }
+
+        const affectedRows = await Insumo.updateType(id, descricao, imagemPath); // Não precisa de empresaCnpj
+        
+        if (affectedRows === 0) {
+            // Este 'if' pode não ser atingido se o model lançar o erro primeiro, mas é uma boa proteção.
+            return res.status(404).json({ message: 'Tipo de insumo não encontrado.' });
+        }
+        res.status(200).json({ message: 'Tipo de insumo atualizado com sucesso!' });
+
+    } catch (error) {
+        console.error('Erro ao atualizar tipo de insumo:', error);
+        // O model agora nos manda as mensagens de erro corretas
+        if (error.message.includes('em uso') || error.message.includes('base')) {
+            return res.status(403).json({ message: error.message }); // 403 = Proibido
+        }
+        if (error.message.includes('já está em uso')) {
+            return res.status(409).json({ message: error.message }); // 409 = Conflito
+        }
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+
+exports.excluirTipoInsumo = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const affectedRows = await Insumo.deleteType(id); // Não precisa de empresaCnpj
+        
+        if (affectedRows === 0) {
+            return res.status(404).json({ message: 'Tipo de insumo não encontrado.' });
+        }
+        res.status(200).json({ message: 'Tipo de insumo excluído com sucesso!' });
+
+    } catch (error) {
+        console.error('Erro ao excluir tipo de insumo:', error);
+        // Erro de "Insumo Base"
+        if (error.message.includes('base')) {
+            return res.status(403).json({ message: error.message }); // 403 = Proibido
+        }
+        // Erro de chave estrangeira (FK)
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(409).json({ message: 'Não é possível excluir. Este tipo de insumo já está em uso por itens no inventário.' });
+        }
+        res.status(500).json({ message: 'Erro interno do servidor.' });
     }
 };
 

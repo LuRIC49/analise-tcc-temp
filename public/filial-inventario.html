@@ -31,9 +31,29 @@
             <a href="#" id="btnVerVistorias" class="btn-action">Ver Vistorias</a>
         </div>
 
-        <div class="insumos-section">
+<div class="insumos-section">
             <h2>Insumos Gerais Cadastrados</h2>
             <hr>
+
+            <div class="filter-controls" style="display: flex; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                
+                <div class="filter-group" style="flex-grow: 1; min-width: 250px;">
+                    <label for="serialSearchInput" style="display: block; margin-bottom: 5px; font-weight: bold;">Pesquisar por Nº Serial:</label>
+                    <input type="text" id="serialSearchInput" list="serialSearchList" placeholder="Digite um Nº Serial..." style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    
+                    <datalist id="serialSearchList"></datalist>
+                </div>
+
+                <div class="filter-group" style="flex-grow: 1; min-width: 200px;">
+                    <label for="statusFilter" style="display: block; margin-bottom: 5px; font-weight: bold;">Filtrar por Status:</label>
+                    <select id="statusFilter" style="width: 100%; padding: 8px;">
+                        <option value="todos">Todos os Status</option>
+                        <option value="status-ok">OK</option>
+                        <option value="status-warning">Próximo ao Vencimento</option>
+                        <option value="status-expired">Vencido</option>
+                    </select>
+                </div>
+            </div>
             <section class="products-section" id="insumos-gerais-grid">
                 <p>Carregando insumos...</p>
             </section>

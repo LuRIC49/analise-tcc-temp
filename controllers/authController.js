@@ -10,7 +10,7 @@ exports.registrarEmpresa = async (req, res) => {
 
     let connection;
     try {
-        const passwordHash = await bcrypt.hash(senha, 10);
+        const passwordHash = await bcrypt.hash(senha, 6);
         connection = await mainPool.getConnection();
         
         await connection.beginTransaction();

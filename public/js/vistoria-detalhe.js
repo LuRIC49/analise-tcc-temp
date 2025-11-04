@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return [];
         }
     }
-    async function openDetailsModal(descricaoInsumo) {
+async function openDetailsModal(descricaoInsumo) {
         closeModal(selectionModal);
         detailsModal.querySelector('#detailsModalTitle').textContent =
             `Detalhes para: ${descricaoInsumo}`;
@@ -235,10 +235,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let seriais = [];
         let locais = [];
-        if (
-            descricaoInsumo.toLowerCase().includes('extintor') &&
-            filialCnpjGlobal
-        ) {
+
+        // --- ALTERAÇÃO INICIA AQUI ---
+        // A condição "if includes('extintor')" foi REMOVIDA.
+        // Sempre busca seriais, pois todos os insumos agora os utilizam.
+        if (filialCnpjGlobal) {
             try {
                 const response = await fetch(
                     `/api/insumos/filial/${filialCnpjGlobal}/seriais`,
@@ -248,10 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.warn('Não foi possível carregar seriais:', error);
             }
-        }
-        if (filialCnpjGlobal) {
+            // Busca locais (lógica original mantida)
             locais = await fetchLocations(filialCnpjGlobal);
         }
+        // --- ALTERAÇÃO TERMINA AQUI ---
 
         let serialInputHtml = '';
         const serialDatalistId = 'serial-list-vistoria';
@@ -261,15 +262,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         serialDatalistHtml += '</datalist>';
 
-        if (descricaoInsumo.toLowerCase().includes('extintor')) {
-            serialInputHtml = `
-                <div class="form-group">
-                    <label for="numero_serial">Nº Serial (Obrigatório):</label>
-                    <input type="text" id="numero_serial" name="numero_serial"
-                           list="${serialDatalistId}" autocomplete="off" required>
-                </div>
-            `;
-        }
+        // --- ALTERAÇÃO INICIA AQUI ---
+        // A condição "if includes('extintor')" foi REMOVIDA.
+        // O campo N° Serial agora é padrão para todos os insumos.
+        serialInputHtml = `
+            <div class="form-group">
+                <label for="numero_serial">Nº Serial (Obrigatório):</label>
+                <input type="text" id="numero_serial" name="numero_serial"
+                       list="${serialDatalistId}" autocomplete="off" required>
+            </div>
+        `;
+        // --- ALTERAÇÃO TERMINA AQUI ---
 
         const locationDatalistId = 'location-list-vistoria';
         let locationDatalistHtml = `<datalist id="${locationDatalistId}">`;
@@ -298,13 +301,27 @@ document.addEventListener('DOMContentLoaded', () => {
             ${serialDatalistHtml}
             ${locationDatalistHtml}
         `;
-        const anovalidadeInput = formContainer.querySelector('#validade');
-        if (anovalidadeInput) {
-            anovalidadeInput.addEventListener('input', () => {
-                const ano = anovalidadeInput.value.split('-')[0];
+
+        // --- ANEXAR VALIDAÇÕES ---
+        const serialInput = formContainer.querySelector('#numero_serial');
+        const localInput = formContainer.querySelector('#local');
+        const validadeInput = formContainer.querySelector('#validade'); 
+
+        if (serialInput) {
+            serialInput.addEventListener('blur', () => validateRequired(serialInput, 'Nº Serial'));
+        }
+        if (localInput) {
+            localInput.addEventListener('blur', () => validateRequired(localInput, 'Localização'));
+        }
+        if (validadeInput) {
+            validadeInput.addEventListener('blur', () => validateDate(validadeInput));
+        
+            // Validação de 4 dígitos
+            validadeInput.addEventListener('input', () => {
+                const ano = validadeInput.value.split('-')[0];
                 if (ano && ano.length > 4) {
                     alert('O ano deve ter no máximo 4 dígitos.');
-                    anovalidadeInput.value = '';
+                    validadeInput.value = '';
                 }
             });
         }
@@ -343,14 +360,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (detailsForm) {
+if (detailsForm) {
         detailsForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+
+            // --- VALIDAR ANTES DE ENVIAR ---
+            let isValid = true;
+            const serialInput = detailsForm.querySelector('#numero_serial');
+            const localInput = detailsForm.querySelector('#local');
+            const validadeInput = detailsForm.querySelector('#validade');
+
+            if (serialInput) {
+                isValid = validateRequired(serialInput, 'Nº Serial') && isValid;
+            }
+            isValid = validateRequired(localInput, 'Localização') && isValid;
+            isValid = validateDate(validadeInput) && isValid;
+
+            if (!isValid) {
+                return; // Impede o envio do formulário
+            }
+            // --- FIM DA VALIDAÇÃO ---
+
             const formData = new FormData(detailsForm);
             const data = Object.fromEntries(formData.entries());
             data.filial_cnpj = filialCnpjGlobal;
+            
             const saveButton = detailsForm.querySelector('.btn-save');
             if (saveButton) saveButton.disabled = true;
+            
             try {
                 const response = await fetch(
                     `/api/vistorias/${vistoriaId}/insumos`,
@@ -487,4 +524,51 @@ function formatDateForClient(date) {
     const dateObj = parseDateAsLocal(date);
     if (!dateObj || isNaN(dateObj)) return 'Data Inválida';
     return dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
+
+
+// --- FUNÇÕES AUXILIARES DE VALIDAÇÃO ---
+function displayError(inputElement, message) {
+    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error-message';
+        errorDiv.style.color = '#d32f2f';
+        errorDiv.style.fontSize = '0.9em';
+        errorDiv.style.marginTop = '5px';
+        inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
+    }
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function clearError(inputElement) {
+    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+    }
+}
+
+function validateRequired(inputElement, fieldName) {
+    if (!inputElement || inputElement.value.trim() === '') {
+        displayError(inputElement, `${fieldName} é obrigatório.`);
+        return false;
+    }
+    clearError(inputElement);
+    return true;
+}
+
+function validateDate(inputElement) {
+    if (!inputElement || inputElement.value.trim() === '') {
+        displayError(inputElement, 'Data de validade é obrigatória.');
+        return false;
+    }
+    const hoje = new Date().toISOString().split('T')[0];
+    if (inputElement.value < hoje) {
+        displayError(inputElement, 'A data não pode ser anterior a hoje.');
+        return false;
+    }
+    clearError(inputElement);
+    return true;
 }

@@ -90,7 +90,7 @@
 
 .modal-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 10px;
     margin-top: 25px;
 }
@@ -104,10 +104,12 @@
     transition: background-color 0.3s ease;
 }
 
-.btn-cancel { background-color: #ff0000; color: white; }
+.btn-cancel { 
+    background-color: #ff0000; color: white; 
+}
 .btn-save {
      background-color: #28a745; color: white; 
-    }
+}
 
 .modal-close-btn {
     position: absolute;
@@ -120,3 +122,78 @@
     cursor: pointer;
 }
 
+
+/*
+Arquivo: public/css/modalstyle.css
+(ADICIONE ESTE BLOCO NO FINAL DO ARQUIVO)
+*/
+
+/* --- [INÍCIO] ESTILOS DE VALIDAÇÃO DE FORMULÁRIO --- */
+
+/* Destaca inputs com erro */
+.form-group input.input-error,
+.form-group textarea.input-error,
+.form-group select.input-error {
+    border-color: #d32f2f; /* Vermelho */
+    background-color: #fff8f8; /* Fundo rosa claro */
+}
+
+/* Estilo da mensagem de erro */
+.field-error-message {
+    color: #d32f2f; /* Vermelho */
+    font-size: 0.9em;
+    font-weight: bold;
+    margin-top: 5px;
+    display: none; /* Oculto por padrão */
+}
+
+/* Garante que o span de erro no modal de edição também funcione */
+#editForm .field-error-message {
+    color: #d32f2f;
+    font-size: 0.9em;
+    font-weight: bold;
+    margin-top: 5px;
+    display: none;
+}
+
+/* --- [FIM] ESTILOS DE VALIDAÇÃO DE FORMULÁRIO --- */
+
+
+
+.modal-content .form-group {
+    margin-bottom: 15px; /* Adiciona um espaçamento padrão */
+}
+
+.modal-content .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.modal-content .form-group input[type="text"],
+.modal-content .form-group input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Garante que o padding não quebre o layout */
+    font-size: 1rem;
+}
+
+.modal-content .form-group input[type="file"] {
+    /* Estilo específico para o input de arquivo */
+    background-color: #f9f9f9;
+}
+
+.modal-content .form-group .field-error-message {
+    color: #d32f2f; /* Vermelho escuro */
+    font-size: 0.9em;
+    margin-top: 5px;
+    display: none; /* Escondido por padrão */
+}
+
+/* Adiciona a borda vermelha ao input inválido */
+.modal-content .form-group input.invalid {
+    border-color: #d32f2f;
+}

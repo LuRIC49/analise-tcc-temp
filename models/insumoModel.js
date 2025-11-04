@@ -1,29 +1,189 @@
-// models/insumoModel.js
 const db = require('../db');
 const { parseDateAsLocal, formatDateForClient } = require('../utils/dateFormatter');
 
-// Classe para interagir com a tabela 'insumo' (tipos de insumo)
+
+
+/**
+ * Verifica se um tipo de insumo está em uso em QUALQUER tabela.
+ * Lança um erro se estiver em uso.
+ * @param {number} id - O insumo_codigo
+ * @param {object} connection - O pool de conexão
+ */
+async function checkInsumoUsage(id, connection) {
+    const conn = connection || db;
+    
+    // 1. Verifica na tabela MUTAVEL (inventário atual)
+    let query = 'SELECT codigo FROM insumo_filial_mutavel WHERE insumo_codigo = ? LIMIT 1';
+    let [rows] = await conn.query(query, [id]);
+    if (rows.length > 0) {
+        throw new Error('Este tipo de insumo está em uso no inventário (mutavel) e não pode ser modificado.');
+    }
+
+    // 2. Verifica na tabela IMUTAVEL (histórico)
+    query = 'SELECT codigo FROM insumo_filial_vistoria_imutavel WHERE insumo_codigo = ? LIMIT 1';
+    [rows] = await conn.query(query, [id]);
+    if (rows.length > 0) {
+        throw new Error('Este tipo de insumo está em uso no histórico (imutavel) e não pode ser modificado.');
+    }
+}
+
+
+
 class Insumo {
-    // Busca todos os tipos de insumos cadastrados.
+    
+    /**
+     * Busca todos os tipos de insumos (Globais e Custom).
+     * Seleciona o 'is_base' para o frontend saber o que bloquear.
+     */
     static async findAllTypes() {
-        // [CORRIGIDO] Seleciona 'imagem' (o BLOB)
-        const [rows] = await db.query('SELECT codigo, descricao, imagem FROM insumo ORDER BY descricao ASC');
+        // Removemos a lógica de 'empresa_cnpj'
+        const query = `
+            SELECT codigo, descricao, imagem, is_base 
+            FROM insumo 
+            ORDER BY descricao ASC
+        `;
+        const [rows] = await db.query(query);
         return rows;
     }
 
-    // Encontra o código de um tipo pelo nome ou cria um novo se não existir.
-    static async findOrCreateType(descricao, connection) {
-        const conn = connection || db;
-        let [rows] = await conn.query('SELECT codigo FROM insumo WHERE descricao = ?', [descricao]);
-        if (rows.length > 0) {
-            return rows[0].codigo;
-        } else {
-            // Assume que a tabela 'insumo' tem 'imagem' (BLOB) que pode ser NULL inicialmente
-            const [result] = await conn.execute('INSERT INTO insumo (descricao) VALUES (?)', [descricao]);
+    /**
+     * Busca um único TIPO de insumo pelo seu código.
+     * @param {number} id 
+     * @returns {Promise<object|null>}
+     */
+    static async findById(id) {
+        // Removemos a lógica de 'empresa_cnpj'
+        const [rows] = await db.query('SELECT codigo, descricao, imagem, is_base FROM insumo WHERE codigo = ?', [id]);
+        return rows[0];
+    }
+
+    /**
+     * Cria um novo TIPO de insumo (sempre como "Não-Base").
+     * @param {string} descricao 
+     * @param {string} imagemPath
+     * @returns {Promise<number>} O ID do novo tipo.
+     */
+    static async createType(descricao, imagemPath) {
+        const descricaoPadronizada = descricao.trim().toLowerCase();
+        
+        // A constraint 'UNIQUE' no DB já previne duplicatas
+        // O 'is_base = 0' é o DEFAULT 0 que definimos na tabela
+        const query = 'INSERT INTO insumo (descricao, imagem) VALUES (?, ?)'; 
+        try {
+            const [result] = await db.execute(query, [descricaoPadronizada, imagemPath || null]);
             return result.insertId;
+        } catch (error) {
+            if (error.code === 'ER_DUP_ENTRY') {
+                throw new Error('Já existe um tipo de insumo com esta descrição.');
+            }
+            throw error;
         }
     }
+
+    /**
+     * Atualiza um TIPO de insumo.
+     * BLOQUEIA se for 'is_base = 1' ou se estiver 'em uso'.
+     * @param {number} id 
+     * @param {string} descricao 
+     * @param {string} imagemPath 
+     * @returns {Promise<number>} Número de linhas afetadas.
+     */
+    static async updateType(id, descricao, imagemPath) {
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // 1. Verificar se é um Tipo Base
+            const [rowsTipo] = await connection.query('SELECT is_base FROM insumo WHERE codigo = ? FOR UPDATE', [id]);
+            if (rowsTipo.length === 0) {
+                throw new Error('Tipo de insumo não encontrado.');
+            }
+            if (rowsTipo[0].is_base === 1) {
+                throw new Error('Não é permitido editar um tipo de insumo base.');
+            }
+
+            // 2. [NOVO] Verificar se está em uso
+            // Esta função vai lançar um erro se o item estiver em uso.
+            await checkInsumoUsage(id, connection);
+
+            // 3. Se passou nas verificações, atualiza
+            const descricaoPadronizada = descricao.trim().toLowerCase();
+            let query;
+            let params;
+
+            if (imagemPath !== undefined) {
+                query = 'UPDATE insumo SET descricao = ?, imagem = ? WHERE codigo = ?';
+                params = [descricaoPadronizada, imagemPath, id];
+            } else {
+                query = 'UPDATE insumo SET descricao = ? WHERE codigo = ?';
+                params = [descricaoPadronizada, id];
+            }
+            
+            const [result] = await connection.execute(query, params);
+            await connection.commit();
+            return result.affectedRows;
+
+        } catch (error) {
+            await connection.rollback();
+            if (error.code === 'ER_DUP_ENTRY') {
+                throw new Error('A descrição fornecida já está em uso por outro tipo.');
+            }
+            throw error; // Propaga o erro (ex: "em uso" ou "base")
+        } finally {
+            connection.release();
+        }
+    }
+
+    /**
+     * Exclui um TIPO de insumo.
+     * BLOQUEIA se for 'is_base = 1'.
+     * (O DB bloqueará via FK se estiver em uso).
+     * @param {number} id 
+     * @returns {Promise<number>} Número de linhas afetadas.
+     */
+    static async deleteType(id) {
+        // 1. Verificar se é um Tipo Base
+        const [rowsTipo] = await db.query('SELECT is_base FROM insumo WHERE codigo = ?', [id]);
+        if (rowsTipo.length === 0) {
+            throw new Error('Tipo de insumo não encontrado.');
+        }
+        if (rowsTipo[0].is_base === 1) {
+            throw new Error('Não é permitido excluir um tipo de insumo base.');
+        }
+
+        // 2. Se não for base, tenta excluir.
+        // O DB vai lançar 'ER_ROW_IS_REFERENCED_2' se estiver em uso.
+        const [result] = await db.execute('DELETE FROM insumo WHERE codigo = ?', [id]);
+        return result.affectedRows;
+    }
+
+
+    /**
+     * Encontra (ou cria) um tipo de insumo.
+     * @param {string} descricao - O texto (ex: "extintor pqs")
+     * @param {object} connection - O pool de conexão (opcional)
+     */
+    static async findOrCreateType(descricao, connection) {
+        const conn = connection || db;
+        const descricaoPadronizada = descricao.trim().toLowerCase();
+
+        // 1. Tenta encontrar o tipo
+        let [rows] = await conn.query('SELECT codigo FROM insumo WHERE descricao = ?', [descricaoPadronizada]);
+        if (rows.length > 0) {
+            return rows[0].codigo;
+        }
+        
+        // 2. Se não existe, CRIA um novo tipo (como 'is_base = 0' por padrão)
+        const [result] = await conn.execute('INSERT INTO insumo (descricao) VALUES (?)', [descricaoPadronizada]);
+        return result.insertId;
+    }
 }
+
+
+
+
+
+
 
 // Classe para interagir com as tabelas de inventário da filial (mutável e imutável)
 class InsumoFilial {
