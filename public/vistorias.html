@@ -19,7 +19,10 @@
                     
                     <h1 class="companies-title" id="vistorias-title">Vistorias</h1>
                     
-                    <div class="actions-header">
+                    <div class="actions-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 15px;">
+                        <div class="page-actions"> 
+                            <a href="javascript:history.back()" id="btnVoltar" class="btn-new-item">Voltar</a>
+                        </div> 
                         <div class="filter-container">
                             <label for="filtro-vistorias">Visualizar por:</label>
                             <select id="filtro-vistorias" class="filter-select">
@@ -29,9 +32,11 @@
                                 <option value="andamento">Vistorias em Andamento</option>
                             </select>
                         </div>
+
                         <div class="page-actions">
                             <a href="#" id="btnIniciarVistoria" class="btn-new-item">Criar Nova Vistoria</a>
                         </div>
+
                     </div>
                     
                     <div class="vistorias-list" id="vistorias-list">
@@ -46,15 +51,16 @@
                     <h2 id="promptModalTitle">Iniciar Nova Vistoria</h2>
 
                     <form id="formNovaVistoria"> 
-                        <div id="formInputsContainer"> <div class="form-group">
+                        <div id="formInputsContainer"> 
+                        <div class="form-group">
                                 <label for="promptInput">Nome do técnico responsável:</label>
-                                <input type="text" id="promptInput" name="tecnico_responsavel" autocomplete="off">
-                                </div>
+                                <input type="text" id="promptInput" name="tecnico_responsavel" autocomplete="off" required>
+                                <div class="field-error-message"></div>
                         </div>
 
                         <div class="modal-actions">
                             <button type="button" class="btn-cancel">Cancelar</button>
-                            <button type="button" id="promptConfirmBtn" class="btn-save" disabled>Confirmar</button> 
+                            <button type="button" id="promptConfirmBtn" class="btn-save">Confirmar</button>
                         </div>
                     </form>
 
@@ -82,6 +88,7 @@
 
     <script src="js/layout.js" defer></script>
     <script src="js/auth.js" defer></script>
+    <script src="js/notifier.js" defer></script>
     <script src="js/vistorias.js" defer></script>
 </body>
 </html>

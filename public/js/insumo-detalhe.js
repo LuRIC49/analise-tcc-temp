@@ -43,6 +43,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const editModalCloseBtn = editModal.querySelector('.modal-close-btn');
     const editModalCancelBtn = editModal.querySelector('.btn-cancel');
 
+
+
+    const confirmDeleteModal = document.getElementById('confirmExcluirInsumoModal');
+    const confirmDeleteTitle = document.getElementById('confirmDeleteTitle');
+    const confirmDeleteText = document.getElementById('confirmDeleteText');
+    const confirmDeleteCancelBtn = document.getElementById('confirmExcluirInsumoCancelBtn');
+    const confirmDeleteConfirmBtn = document.getElementById('confirmExcluirInsumoConfirmBtn');
+    const confirmDeleteCloseBtn = document.getElementById('confirmExcluirInsumoCloseBtn');
+
     if (editLocal) {
         editLocal.addEventListener('blur', () => validateRequired(editLocal, 'Localização'));
     }
@@ -59,6 +68,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentInsumoData = null; // Para guardar os dados atuais para edição]
 
+
+    function openConfirmDeleteModal() {
+        if (!currentInsumoData) return;
+        // Preenche o modal com os dados do insumo
+        if(confirmDeleteTitle) confirmDeleteTitle.textContent = `Excluir Insumo`;
+        if(confirmDeleteText) confirmDeleteText.textContent = `Tem certeza que deseja excluir o insumo de Serial "${currentInsumoData.numero_serial}"? `;
+        
+        if (confirmDeleteModal) confirmDeleteModal.style.display = 'flex';
+    }
+
+    function closeConfirmDeleteModal() {
+        if (confirmDeleteModal) confirmDeleteModal.style.display = 'none';
+    }
     
 
 
@@ -80,6 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const historico = await response.json();
+
+            historico.reverse();
             
             if (historico.length === 0) {
                  historyModalBody.innerHTML = '<p>Nenhum histórico de alterações encontrado para este item.</p>';
@@ -106,13 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ? `Vistoria #${reg.vistoria_codigo}` 
                                 : 'Edição Manual';
                 
-                historyHtml += `
+            historyHtml += `
                     <tr>
                         <td style="border: 1px solid #ddd; padding: 8px;">${origem}</td>
                         <td style="border: 1px solid #ddd; padding: 8px;">${reg.local || 'N/A'}</td>
                         <td style="border: 1px solid #ddd; padding: 8px;">${reg.validade_formatada || 'N/A'}</td>
                         <td style="border: 1px solid #ddd; padding: 8px;">${reg.numero_serial || 'N/A'}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${reg.descricao || ''}</td>
+                        
+                        <td style="border: 1px solid #ddd; padding: 8px;">
+                           <div class="history-description">${reg.descricao || ''}</div>
+                        </td>
                         </tr>
                 `;
             });
@@ -142,10 +169,18 @@ document.addEventListener('DOMContentLoaded', () => {
          historyModalCloseXBtn.addEventListener('click', closeHistoryModal);
      }
      // Opcional: Fechar se clicar fora do modal
-     window.addEventListener('click', (event) => {
+    window.addEventListener('click', (event) => {
+         if (event.target === editModal) {
+             closeEditModal();
+         }
          if (event.target === historyModal) {
              closeHistoryModal();
          }
+         // --- ADICIONADO ---
+         if (event.target === confirmDeleteModal) {
+             closeConfirmDeleteModal();
+         }
+         // --- FIM DA ADIÇÃO ---
      });
 
     // --- FUNÇÕES DE CARREGAMENTO ---
@@ -186,23 +221,41 @@ async function carregarDetalhesInsumo() {
     });
 
     btnExcluir.addEventListener('click', async () => {
-        if (!currentInsumoData) return;
-        if (confirm(`Tem certeza que deseja excluir o insumo "${currentInsumoData.tipo_insumo}" (Código: ${currentInsumoData.codigo}) do inventário atual? O histórico será mantido.`)) {
-            try {
-                const response = await fetch(`/api/insumos/${insumoId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message);
-                alert(result.message);
-                window.history.back(); // Volta para a lista após excluir
-            } catch (error) {
-                alert(`Erro ao excluir: ${error.message}`);
-            }
-        }
+        openConfirmDeleteModal();
     });
 
+
+
+
+    async function handleExcluirConfirmado() {
+        try {
+            const response = await fetch(`/api/insumos/${insumoId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            
+            Notifier.showSuccess(result.message, 1500); 
+
+            setTimeout(() => {
+                if (currentInsumoData.filial_cnpj) {
+                    window.location.href = `filial-inventario.html?cnpj=${currentInsumoData.filial_cnpj}`;
+                } else {
+                    window.location.href = 'inventario.html';
+                }
+            }, 1500);
+
+        } catch (error) {
+            Notifier.showError(`Erro ao excluir: ${error.message}`);
+        } finally {
+            closeConfirmDeleteModal();
+        }
+    }
+
+    if (confirmDeleteCancelBtn) confirmDeleteCancelBtn.addEventListener('click', closeConfirmDeleteModal);
+    if (confirmDeleteCloseBtn) confirmDeleteCloseBtn.addEventListener('click', closeConfirmDeleteModal);
+    if (confirmDeleteConfirmBtn) confirmDeleteConfirmBtn.addEventListener('click', handleExcluirConfirmado);
     // --- LÓGICA DO MODAL DE EDIÇÃO ---
     
     /**
@@ -239,7 +292,6 @@ const openEditModal = async () => {
         editValidade.addEventListener('input', () => {
             const ano = editValidade.value.split('-')[0];
             if (ano && ano.length > 4) {
-                alert('O ano deve ter no máximo 4 dígitos.');
                 editValidade.value = ''; // Limpa se inválido
             }
         });
@@ -260,10 +312,11 @@ const closeEditModal = () => {
             editSerialInput.style.cursor = ''; 
         }
     };
-
     btnEditar.addEventListener('click', openEditModal);
     editModalCloseBtn.addEventListener('click', closeEditModal);
     editModalCancelBtn.addEventListener('click', closeEditModal);
+
+
 
 editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -275,7 +328,7 @@ editForm.addEventListener('submit', async (event) => {
         isValid = validateDate(editValidade) && isValid;
 
         if (!isValid) {
-            return; // Impede o envio do formulário
+            return;
         }
         // --- FIM DA MODIFICAÇÃO ---
 
@@ -286,7 +339,7 @@ editForm.addEventListener('submit', async (event) => {
         if (data.validade) {
             const ano = data.validade.split('-')[0];
             if (ano.length !== 4) {
-                alert('Ano da validade inválido. Use 4 dígitos.');
+                Notifier.showError('Ano da validade inválido. Use 4 dígitos.');
                 return; 
             }
             // A validação de data passada já foi feita pelo validateDate()
@@ -305,11 +358,13 @@ editForm.addEventListener('submit', async (event) => {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
 
+            Notifier.showSuccess(result.message);
+
             closeEditModal();
             carregarDetalhesInsumo(); // Recarrega os detalhes da página
 
         } catch (error) {
-            alert(`Erro ao salvar: ${error.message}`);
+            Notifier.showError(`Erro ao salvar: ${error.message}`);
         }
     });
 

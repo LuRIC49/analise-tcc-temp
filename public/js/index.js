@@ -18,23 +18,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let modoEdicao = false;
 
+    const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+    const confirmDeleteTitle = document.getElementById('confirmDeleteTitle');
+    const confirmDeleteText = document.getElementById('confirmDeleteText');
+    const confirmDeleteCancelBtn = document.getElementById('confirmDeleteCancelBtn');
+    const confirmDeleteConfirmBtn = document.getElementById('confirmDeleteConfirmBtn');
+    const confirmDeleteCloseBtn = document.getElementById('confirmDeleteCloseBtn');
+    
+    let idParaExcluir = null;
+
     // --- FUNÇÕES PRINCIPAIS (Carrossel e CRUD) ---
 
-    // 1. Busca os dados dos tipos de insumo
+// 1. Busca os dados dos tipos de insumo
     async function fetchInsumos() {
-        if (!token) {
-            // Se não está logado, nem tenta buscar
-            swiperWrapper.innerHTML = '<p>Você precisa estar logado para ver os tipos de insumo.</p>';
-            return [];
+        
+        // --- INÍCIO DA ALTERAÇÃO ---
+        let url = '/api/insumos/public-tipos'; // Rota PÚBLICA (padrão para guest)
+        let options = {};
+
+        if (token) {
+            // Se ESTIVER logado, usa a rota SEGURA
+            url = '/api/insumos/tipos'; 
+            options = { headers: { 'Authorization': `Bearer ${token}` } };
         }
+        // --- FIM DA ALTERAÇÃO ---
+
         try {
-            // CORRIGIDO: Busca na rota correta de TIPOS
-            const response = await fetch('/api/insumos/tipos', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await fetch(url, options); // Usa a URL e opções corretas
+            
             if (!response.ok) {
-                throw new Error('Não foi possível buscar os insumos.');
+                if (!token) throw new Error('Não foi possível carregar o catálogo de insumos.');
+                else throw new Error('Sessão expirada. Faça login novamente para ver os insumos.');
             }
+            
             const insumos = await response.json();
             return insumos;
         } catch (error) {
@@ -65,8 +81,8 @@ async function initializeCarousel() {
             // Botões de CRUD (só aparecem se logado E se NÃO for base)
             const crudButtonsHTML = !isBase ? `
                 <div class="crud-buttons" style="display: flex; gap: 5px; margin-top: 10px;">
-                    <button class="btn-action btn-edit" data-id="${insumo.codigo}" style="background-color: #007bff; color: white; padding: 5px 8px; border: none; cursor: pointer; font-size: 0.9em; flex: 1;">Editar</button>
                     <button class="btn-action btn-delete" data-id="${insumo.codigo}" data-descricao="${insumo.descricao}" style="background-color: #dc3545; color: white; padding: 5px 8px; border: none; cursor: pointer; font-size: 0.9em; flex: 1;">Excluir</button>
+                    <button class="btn-action btn-edit" data-id="${insumo.codigo}" style="background-color: #007bff; color: white; padding: 5px 8px; border: none; cursor: pointer; font-size: 0.9em; flex: 1;">Editar</button>
                 </div>
             ` : `
                 <div class="crud-buttons" style="display: flex; gap: 5px; margin-top: 10px; height: 31px; justify-content: center; align-items: center;">
@@ -155,7 +171,17 @@ function closeModal() {
         modoEdicao = false; 
         // --- FIM DA CORREÇÃO ---
     }
-    // --- Funções de Ação (Submit, Excluir, Preview) ---
+    function openConfirmDeleteModal(id, descricao) {
+        idParaExcluir = id; // Armazena o ID
+        if(confirmDeleteTitle) confirmDeleteTitle.textContent = `Excluir "${descricao}"`;
+        if(confirmDeleteText) confirmDeleteText.textContent = `Tem certeza que deseja excluir este tipo de Insumo?`;
+        if (confirmDeleteModal) confirmDeleteModal.style.display = 'flex';
+    }
+
+    function closeConfirmDeleteModal() {
+        idParaExcluir = null; // Limpa o ID
+        if (confirmDeleteModal) confirmDeleteModal.style.display = 'none';
+    }
 
 async function handleExcluir(id, descricao) {
         // O confirm() ainda é útil, pois é uma pergunta (Sim/Não).
@@ -228,31 +254,49 @@ async function handleSubmit(event) {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
 
-            // --- SUBSTITUIÇÃO DO ALERT ---
-            Notifier.showSuccess(result.message); // Sucesso!
-            // --- FIM DA SUBSTITUIÇÃO ---
-            
+            Notifier.showSuccess(result.message); // <--- SUBSTITUÍDO
             closeModal();
             initializeCarousel(); // Recarrega o carrossel
 
         } catch (error) {
-            // --- SUBSTITUIÇÃO DO ALERT ---
-            Notifier.showError(error.message); // Erro!
-            // --- FIM DA SUBSTITUIÇÃO ---
+            Notifier.showError(error.message); // <--- SUBSTITUÍDO
         } finally {
             saveButton.disabled = false;
             saveButton.textContent = 'Salvar';
         }
     }
 
+    async function handleExcluir() {
+        if (!idParaExcluir) return; // Proteção
+        
+        const id = idParaExcluir; // Pega o ID armazenado
+        
+        // O confirm() foi removido
+        
+        try {
+            const response = await fetch(`/api/insumos/tipos/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+            
+            Notifier.showSuccess('Tipo excluído com sucesso!'); // <--- SUBSTITUÍDO
+            initializeCarousel(); // Recarrega a lista
+        } catch (error) {
+            Notifier.showError(error.message); // <--- SUBSTITUÍDO
+        } finally {
+            closeConfirmDeleteModal(); // Fecha o modal de confirmação
+        }
+    }
+
 // --- Event Listeners (VERSÃO CORRIGIDA E PROTEGIDA) ---
     
-    // Botão Principal "Cadastrar"
-    if (btnAbrirModalNovo) {
+   if (btnAbrirModalNovo) {
         btnAbrirModalNovo.addEventListener('click', () => openModal('novo'));
     }
 
-    // Botões do Modal
+    // Botões do Modal de Edição/Criação
     if (btnCancel) {
         btnCancel.addEventListener('click', closeModal);
     }
@@ -263,6 +307,7 @@ async function handleSubmit(event) {
     // Fechar ao clicar fora
     window.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
+        if (e.target === confirmDeleteModal) closeConfirmDeleteModal(); // Adicionado
     });
 
     // Listeners de Validação do Formulário
@@ -278,20 +323,38 @@ async function handleSubmit(event) {
         });
     }
 
-    // Listener de Submit (O alvo do seu problema)
+    // Listener de Submit
     if (form) {
         form.addEventListener('submit', handleSubmit);
     } else {
         console.error("ERRO CRÍTICO: O <form id='tipoForm'> não foi encontrado. O submit não vai funcionar.");
     }
 
+    // --- INÍCIO DA MODIFICAÇÃO (Listeners do Modal de Exclusão) ---
+    
+    // Botões do Modal de Exclusão
+    if (confirmDeleteCancelBtn) {
+        confirmDeleteCancelBtn.addEventListener('click', closeConfirmDeleteModal);
+    }
+    if (confirmDeleteCloseBtn) {
+        confirmDeleteCloseBtn.addEventListener('click', closeConfirmDeleteModal);
+    }
+    if (confirmDeleteConfirmBtn) {
+        confirmDeleteConfirmBtn.addEventListener('click', handleExcluir); // Chama a nova função
+    }
+    
+    // --- FIM DA MODIFICAÇÃO ---
+
     // Delegação de eventos para os botões nos slides do Carrossel
-    if (swiperWrapper) {
+if (swiperWrapper) {
         swiperWrapper.addEventListener('click', async (e) => {
+            
             if (e.target.classList.contains('btn-delete')) {
                 const id = e.target.dataset.id;
-                const descricao = e.target.dataset.descricao;
-                handleExcluir(id, descricao);
+                // --- CORREÇÃO AQUI ---
+                const descricao = e.target.dataset.descricao; // Removido o 'dataset' duplicado
+                // --- FIM DA CORREÇÃO ---
+                openConfirmDeleteModal(id, descricao); 
             }
             
             if (e.target.classList.contains('btn-edit')) {
@@ -304,7 +367,7 @@ async function handleSubmit(event) {
                     const tipo = await response.json();
                     openModal('editar', tipo);
                 } catch (error) {
-                    alert(error.message);
+                    Notifier.showError(error.message); 
                 }
             }
         });

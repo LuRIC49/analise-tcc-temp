@@ -16,7 +16,7 @@ async function checkInsumoUsage(id, connection) {
     let query = 'SELECT codigo FROM insumo_filial_mutavel WHERE insumo_codigo = ? LIMIT 1';
     let [rows] = await conn.query(query, [id]);
     if (rows.length > 0) {
-        throw new Error('Este tipo de insumo está em uso no inventário (mutavel) e não pode ser modificado.');
+        throw new Error('Este tipo de insumo está em uso no inventário e não pode ser modificado.');
     }
 
     // 2. Verifica na tabela IMUTAVEL (histórico)

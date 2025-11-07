@@ -191,23 +191,40 @@ main {
     flex-wrap: wrap;
 }
 
+/*
+ * Regras de Visibilidade do CRUD
+ * O 'auth.js' adiciona 'guest' ou 'logged-in' ao <body>.
+*/
+
+/* * REGRA 1 (A MAIS IMPORTANTE): 
+ * Esconde TUDO relacionado ao CRUD se o body for 'guest'.
+ * Usamos !important para garantir que ganhe de 'inventario.css'.
+*/
+body.guest .crud-button,
+body.guest .crud-buttons {
+    display: none !important;
+}
+
+
+/* * REGRA 2: Mostra os botões para usuários 'logged-in'
+ * (O 'auth.js' troca o 'guest' por 'logged-in')
+*/
+body.logged-in .page-actions .crud-button {
+    display: inline-block; /* Mostra o botão "Cadastrar Novo Tipo" */
+}
+        
+body.logged-in .crud-buttons {
+    display: flex; /* Mostra os botões "Editar/Excluir/Padrão" nos cards */
+}
+
+
+/* * REGRA 3 (Fallback): 
+ * Se o auth.js ainda não rodou, esconde os botões por padrão.
+*/
 .crud-button,
 .crud-buttons {
-    display: none; /* Escondido por padrão */
+    display: none;
 }
-
-/* * Se o usuário estiver LOGADO, mostramos os botões.
-*/
-body.logged-in .crud-button,
-body.logged-in .crud-buttons {
-    display: flex; /* 'flex' para os botões de editar/excluir */
-}
-
-/* Ajuste específico para o botão "Cadastrar" */
-body.logged-in .page-actions .crud-button {
-    display: inline-block;
-}
-
 
 /* ==========================================================================
    REGRAS DE RESPONSIVIDADE - ATUALIZADAS

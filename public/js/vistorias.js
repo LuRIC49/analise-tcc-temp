@@ -102,9 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
             : `Finalizada em ${new Date(vistoria.data_fim).toLocaleDateString()}`;
 
         const deleteButtonHtml = isAberta ? `
-            <button type="button" class="btn-danger btn-excluir-vistoria"
+            <button type="button" class="btn-access-info btn-danger btn-excluir-vistoria"
                     data-id="${vistoria.codigo}"
-                    style="width: 100%; box-sizing: border-box; text-align: center;">
+                    style="width: 100%; box-sizing: border-box; text-align: center; cursor: pointer;">
                 Excluir Vistoria
             </button>
         ` : '';
@@ -145,7 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalElement) modalElement.style.display = 'none';
 
         if (modalElement === promptModal) {
-            if (promptInput) promptInput.value = '';
+            if (promptInput) {
+                promptInput.value = '';
+                clearError(promptInput); // <-- ADICIONADO
+            }
             if (promptConfirmBtn) {
                 promptConfirmBtn.disabled = true;
                 promptConfirmBtn.textContent = 'Confirmar';
@@ -173,15 +176,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica das Ações ---
 
-    // Envia requisição para iniciar nova vistoria.
     async function handleIniciarVistoria() {
         if (!promptInput || !promptConfirmBtn) return;
-        const tecnicoResponsavel = promptInput.value.trim();
-        if (!tecnicoResponsavel) {
-            alert('O nome do técnico é obrigatório.');
+
+        // --- INÍCIO DA VALIDAÇÃO (SUBSTITUI O ALERT) ---
+        const isTecnicoValid = validateRequired(promptInput, 'Nome do técnico responsável');
+        if (!isTecnicoValid) {
             promptInput.focus();
-            return;
+            return; // Impede o envio
         }
+        // --- FIM DA VALIDAÇÃO ---
+        
+        const tecnicoResponsavel = promptInput.value.trim();
 
         promptConfirmBtn.disabled = true;
         promptConfirmBtn.textContent = 'Criando...';
@@ -198,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal(promptModal);
             window.location.href = `vistoria-detalhe.html?id=${result.vistoriaId}`;
         } catch (error) {
-            alert(`Erro ao iniciar vistoria: ${error.message}`);
+            Notifier.showError(result.message);
             closeModal(promptModal);
         }
     }
@@ -219,10 +225,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error(result.message || `Erro ${response.status}`);
             }
+            Notifier.showSuccess(result.message);
             closeModal(confirmExcluirVistoriaModal);
             carregarVistorias();
         } catch (error) {
-            alert(`Erro ao excluir vistoria: ${error.message}`);
+            Notifier.showError(result.message);
             closeModal(confirmExcluirVistoriaModal);
         }
     }
@@ -238,10 +245,21 @@ document.addEventListener('DOMContentLoaded', () => {
             openModal(promptModal);
         });
 
-        // Modal Iniciar Vistoria
         promptInput?.addEventListener('input', () => {
             if (promptConfirmBtn) promptConfirmBtn.disabled = promptInput.value.trim() === '';
+            
+            // Valida em tempo real enquanto digita (ou apaga)
+            if (promptInput.value.trim() === '') {
+                validateRequired(promptInput, 'Nome do técnico responsável');
+            } else {
+                clearError(promptInput);
+            }
         });
+        // Adiciona 'blur' para garantir a validação ao sair do campo
+        promptInput?.addEventListener('blur', () => {
+            validateRequired(promptInput, 'Nome do técnico responsável');
+        });
+
         promptConfirmBtn?.addEventListener('click', handleIniciarVistoria);
         promptCancelBtn?.addEventListener('click', () => closeModal(promptModal));
         promptCloseBtn?.addEventListener('click', () => closeModal(promptModal));
@@ -274,3 +292,41 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarVistorias();
     initializeEventListeners();
 });
+
+
+
+
+
+
+
+
+// --- INÍCIO: FUNÇÕES DE VALIDAÇÃO (Sem Alertas) ---
+
+function displayError(inputElement, message) {
+    // Encontra o 'irmão' .field-error-message
+    const errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+    inputElement.classList.add('invalid');
+}
+
+function clearError(inputElement) {
+    const errorDiv = inputElement.parentElement.querySelector('.field-error-message');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+    }
+    inputElement.classList.remove('invalid');
+}
+
+function validateRequired(inputElement, fieldName) {
+    if (!inputElement || inputElement.value.trim() === '') {
+        displayError(inputElement, `${fieldName} é obrigatório.`);
+        return false;
+    }
+    clearError(inputElement);
+    return true;
+}
+// --- FIM: FUNÇÕES DE VALIDAÇÃO ---

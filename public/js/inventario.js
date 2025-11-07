@@ -83,14 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createFilialCard(filial) {
         const cnpjFormatado = filial.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+        
         return `
             <div class="company-card">
                 <div class="card-text-info">
-                    <p class="institution-name">${filial.nome}</p>
+                    <p class="institution-name" title="${filial.nome}">${filial.nome}</p>
                     <p class="company-cnpj">${cnpjFormatado}</p>
-                    <p class="company-address">${filial.endereco}</p>
+                    <p class="company-address" title="${filial.endereco}">${filial.endereco}</p>
                     <div class="card-contact-section">
-                        <p class="company-email">${filial.email_responsavel}</p>
+                        <p class="company-email" title="${filial.email_responsavel}">${filial.email_responsavel}</p>
                         <a href="filial-inventario.html?cnpj=${filial.cnpj}" class="btn-access-info">Acessar Inventário</a>
                     </div>
                 </div>
@@ -117,11 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    formNovaFilial.addEventListener('submit', async (event) => {
+formNovaFilial.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         if (!validateCnpj(filialCnpjInput)) {
-            alert('Por favor, corrija o CNPJ antes de continuar.');
+            Notifier.showError('Por favor, corrija o CNPJ antes de continuar.');
             return;
         }
 
@@ -138,11 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
             
-            alert('Filial cadastrada com sucesso!');
+            Notifier.showSuccess('Filial cadastrada com sucesso!');
             closeModal();
             carregarFiliais();
         } catch (error) {
-            alert(`Erro: ${error.message}`);
+            Notifier.showError(`Erro: ${error.message}`);
         }
     });
 

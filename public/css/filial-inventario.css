@@ -36,6 +36,50 @@
     text-align: left;
 }
 
+
+/*
+ * ADIÇÃO: Truncamento de Texto (Ellipsis) no Painel de Informações
+*/
+
+/* 1. O PAI (O Container dos Detalhes) */
+/* Esta é a correção principal: forçamos o item flex a encolher */
+.info-panel-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Alinha verticalmente, se houver espaço */
+    
+    /* O "truque" do flexbox para permitir o encolhimento */
+    overflow: hidden; 
+    min-width: 0;     
+}
+
+/* 2. OS FILHOS (Os parágrafos) */
+/* Agora que o pai está fixo, esta regra vai funcionar */
+.info-panel-details p {
+    white-space: nowrap;      /* Impede a quebra de linha */
+    overflow: hidden;         /* Esconde o excesso */
+    text-overflow: ellipsis;  /* Adiciona "..." */
+
+    /* Remove 'width: 100%' - desnecessário agora */
+    
+    /* Mantém o padding para respirar */
+    box-sizing: border-box;
+    padding-left: 5px;
+    padding-right: 5px;
+    
+    /* Define uma margem padrão para espaçamento */
+    margin: 4px 0; 
+}
+
+/* 3. A EXCEÇÃO (O CNPJ) */
+/* Sobrescreve o <p> do CNPJ para que ele NUNCA seja truncado */
+.info-panel-details #filial-cnpj-info {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset; /* Reseta o 'ellipsis' */
+}
+
+
 /* --- BOTÃO DE AÇÃO --- */
 .page-actions {
     width: 100%;
@@ -142,6 +186,7 @@
 }
 
 
+
 #btnAdicionarInsumoDireto { background-color: #28a745; }
 #btnAdicionarInsumoDireto:hover { background-color: #218838; }
 #btnVerVistorias { background-color: #007bff; }
@@ -205,4 +250,114 @@
 .product-card.status-expired {
     background-color: #ffe6e6; /* Vermelho claro */
     border-color: #dc3545; /* Vermelho */
+}
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * ADIÇÃO: Truncamento de Texto (Ellipsis) no Painel de Informações
+ *
+ * Isso afeta os elementos de informação no topo da página.
+*/
+.info-panel-details p {
+    /* Estas 3 propriedades juntas criam o efeito "..." */
+    white-space: nowrap;      /* 1. Impede o texto de quebrar a linha */
+    overflow: hidden;         /* 2. Esconde o texto que "vaza" da caixa */
+    text-overflow: ellipsis;  /* 3. Adiciona o "..." no final */
+
+    /* Garantia de que o 'overflow' saiba seu limite */
+    display: block; 
+    width: 100%;
+    
+    /* Adiciona padding para o texto não colar nas bordas */
+    box-sizing: border-box; /* Garante que o padding não quebre a largura */
+    padding-left: 5px;  /* Um padding menor pode ficar melhor aqui */
+    padding-right: 5px;
+}
+
+/* * Sobrescreve a regra para o CNPJ, que não deve ser truncado
+ * (caso o seletor 'p' acima o afete).
+*/
+.info-panel-details #filial-cnpj-info {
+    white-space: normal;
+    overflow: visible;
+}
+
+
+
+
+
+
+
+
+/*
+ * ADIÇÃO: Correção de Layout (Truncamento e Responsividade)
+ *
+ * Esta é a versão definitiva que usa seletores mais fortes
+ * e '!important' para garantir que as regras sejam aplicadas.
+*/
+
+/* 1. O PAI (O Container dos Detalhes) - Desktop */
+/* Força o 'min-width' para permitir o truncamento dos filhos */
+.main-content .info-panel-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden; 
+    min-width: 0;     
+}
+
+/* 2. OS FILHOS (Os parágrafos) - Desktop */
+/* Aplica o "..." (ellipsis) */
+.main-content .info-panel-details p {
+    white-space: nowrap;      
+    overflow: hidden;         
+    text-overflow: ellipsis;  
+    display: block; 
+    
+    box-sizing: border-box;
+    padding-left: 35px;
+    padding-right: 35px;
+    margin: 4px 0; 
+}
+
+/* 3. A EXCEÇÃO (O CNPJ) - Desktop */
+.main-content .info-panel-details #filial-cnpj-info {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+}
+
+
+/* 4. RESPONSIVIDADE (Telas Pequenas) */
+@media (max-width: 600px) {
+
+    /* Força o container a empilhar verticalmente */
+    .main-content .info-panel {
+        flex-direction: column !important; /* MUDANÇA CRÍTICA */
+        align-items: center;
+        gap: 15px;
+    }
+
+    .main-content .info-panel-logo {
+        margin-bottom: 10px;
+    }
+
+    /* Centraliza os textos */
+    .main-content .info-panel-details {
+        align-items: center; 
+        max-width: 90vw; 
+    }
+
+    .main-content .info-panel-details p {
+        text-align: center;
+    }
 }

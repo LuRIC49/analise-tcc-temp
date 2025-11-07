@@ -216,7 +216,21 @@ body {
 
 
 
+.description-box {
+    /* 1. Respeita quebras de linha (Enter) e quebra o texto (wrap) */
+    white-space: pre-wrap; 
+    
+    /* 2. Força palavras muito longas (sem espaço) a quebrar */
+    word-break: break-word; 
 
+    /* Estilos visuais (para consistência com o modal de histórico) */
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #eee;
+    min-height: 50px; /* Garante que a caixa tenha uma altura mínima */
+    margin-top: 5px; /* Espaçamento da label "Descrição Adicional:" */
+}
 
 
 

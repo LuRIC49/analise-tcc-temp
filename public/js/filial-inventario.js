@@ -100,8 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    // --- FUNÇÕES PARA CARREGAR DADOS ---
-    async function carregarDetalhesFilial() {
+
+    
+async function carregarDetalhesFilial() {
         if (!filialNameInfo || !filialCnpjInfo || !filialAddressInfo || !filialEmailInfo) {
              console.error("Elementos DOM para detalhes da filial não encontrados.");
              return;
@@ -112,10 +113,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const filial = await response.json();
             
             document.title = `Inventário: ${filial.nome}`;
+
+            // --- INÍCIO DA CORREÇÃO ---
+            // Adicionamos os atributos 'title' para o tooltip
             filialNameInfo.innerHTML = `<strong>EMPRESA:</strong> ${filial.nome}`;
+            filialNameInfo.title = filial.nome; // Tooltip
+
             filialCnpjInfo.innerHTML = `<strong>CNPJ:</strong> ${filial.cnpj}`;
+            // CNPJ não precisa de tooltip, pois já é formatado
+
             filialAddressInfo.innerHTML = `<strong>ENDEREÇO:</strong> ${filial.endereco}`;
+            filialAddressInfo.title = filial.endereco; // Tooltip
+
             filialEmailInfo.innerHTML = `<strong>EMAIL:</strong> ${filial.email_responsavel}`;
+            filialEmailInfo.title = filial.email_responsavel; // Tooltip
+            // --- FIM DA CORREÇÃO ---
+
         } catch (error) {
             document.querySelector('main').innerHTML = `<h1>${error.message}</h1>`;
         }
@@ -363,7 +376,7 @@ async function fetchLocations(cnpj) {
                 serialInputHtml = `
                 <div class="form-group">
                 <label for="numero_serial">Nº Serial (Obrigatório):</label> 
-                <input type="text" id="numero_serial" name="numero_serial" list="${serialDatalistId}" autocomplete="off" required> 
+                <input type="text" id="numero_serial" name="numero_serial" list="${serialDatalistId}" autocomplete="off"> 
                 </div>
                 `;
                 // --- ALTERAÇÃO TERMINA AQUI ---
@@ -378,7 +391,7 @@ async function fetchLocations(cnpj) {
                 ${serialInputHtml} 
                 <div class="form-group">
                 <label for="local">Localização (Obrigatório):</label>
-                <input type="text" id="local" name="local" list="${locationDatalistId}" required autocomplete="off"> </div>
+                <input type="text" id="local" name="local" list="${locationDatalistId}" autocomplete="off"> </div>
                 <div class="form-group">
                 <label for="descricao_item">Descrição Adicional (Opcional):</label>
                 <textarea id="descricao_item" name="descricao_item" rows="3" maxlength="255"></textarea>
@@ -408,7 +421,6 @@ async function fetchLocations(cnpj) {
                  validadeInput.addEventListener('input', () => {
                  const ano = validadeInput.value.split('-')[0];
                  if (ano && ano.length > 4) {
-                 alert('O ano deve ter no máximo 4 dígitos.');
                  validadeInput.value = '';
                  }
                  });
@@ -453,7 +465,7 @@ if (btnAdicionarInsumoDireto) {
             if (data.validade) {
                 const ano = data.validade.split('-')[0];
                 if (ano.length !== 4) {
-                    alert('Ano da validade inválido. Use 4 dígitos.');
+                    Notifier.showError('Ano da validade inválido. Use 4 dígitos.');
                     return; // Impede o envio
                 }
                 // A validação de data passada já foi feita pelo validateDate()
@@ -463,7 +475,7 @@ if (btnAdicionarInsumoDireto) {
 
             // --- Envio para a API ---
             if (!filialCnpj) {
-                 alert("Erro crítico: CNPJ da filial não encontrado para o envio. Recarregue a página.");
+                 Notifier.showError("Erro crítico: CNPJ da filial não encontrado.");
                  return;
             }
 
@@ -480,22 +492,17 @@ if (btnAdicionarInsumoDireto) {
                     body: JSON.stringify(data) // Envia os dados do formulário
                 });
 
-                const result = await response.json();
-
-                if (!response.ok) {
-                    // Se a API retornar erro (ex: serial obrigatório faltando)
-                    throw new Error(result.message || `Erro ${response.status}`);
-                }
+            const result = await response.json();
+                if (!response.ok) throw new Error(result.message || `Erro ${response.status}`);
                 
-                // Se a API retornou sucesso:
-                closeModal();           // Fecha o modal
-                carregarInsumosGerais(); // Recarrega a lista de insumos na página ATUAL
+                Notifier.showSuccess(result.message || 'Insumo adicionado/atualizado com sucesso!'); // <--- SUBSTITUÍDO
+                closeModal();           
+                carregarInsumosGerais(); 
 
             } catch (error) {
-                // Se fetch falhar ou API retornar erro:
-                alert(`Erro ao adicionar insumo: ${error.message}`);
+                Notifier.showError(`Erro ao adicionar insumo: ${error.message}`); // <--- SUBSTITUÍDO
             } finally {
-                 if(saveButton) saveButton.disabled = false; // Reabilita o botão
+                 if(saveButton) saveButton.disabled = false; 
             }
         });
     } else {

@@ -9,9 +9,9 @@ const { checkFilialOwnership } = require('../middleware/autorizacaoMiddleware');
 const upload = require('../config/multerConfig'); 
 
 // Rota para buscar os TIPOS de insumo (Extintor, Mangueira, etc)
-router.get('/tipos', authenticateToken, inventarioController.listarTiposDeInsumos); // R
+router.get('/tipos', authenticateToken, inventarioController.listarTiposDeInsumos); 
 
-// --- INÍCIO DAS NOVAS ROTAS ---
+router.get('/public-tipos', inventarioController.listarTiposDeInsumos)
 
 // C - Criar um novo tipo de insumo (com upload de imagem)
 router.post('/tipos', authenticateToken, upload.single('imagem'), inventarioController.criarTipoInsumo);

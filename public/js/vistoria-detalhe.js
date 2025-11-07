@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const insumosGrid = document.getElementById('insumos-vistoria-grid');
     const btnAdicionarInsumo = document.getElementById('btnAdicionarInsumo');
     const btnFinalizarVistoria = document.getElementById('btnFinalizarVistoria');
+    const btnVoltarPagina = document.getElementById('btnVoltarPagina');
 
     const selectionModal = document.getElementById('selectionModal');
     const detailsModal = document.getElementById('detailsModal');
@@ -53,6 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const { detalhes, insumos } = await response.json();
 
             filialCnpjGlobal = detalhes.filial_cnpj;
+
+            if (btnVoltarPagina) {
+                btnVoltarPagina.href = `vistorias.html?cnpj=${filialCnpjGlobal}`;
+            }
+
             isVistoriaAberta = detalhes.data_fim === null;
 
             const dataInicio = new Date(
@@ -119,12 +125,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let deleteButtonHtml = '';
         if (isAberta && item.codigo) {
-            deleteButtonHtml = `
-                <button type="button" class="btn-danger btn-excluir-historico"
-                        data-id="${item.codigo}"
-                        style="padding: 5px 10px; font-size: 0.9em; margin-top: 10px;">
+        deleteButtonHtml = `
+                <a href="#" class="btn-access-info btn-danger btn-excluir-historico"
+                        data-id="${item.codigo}" 
+                        data-serial="${item.numero_serial || 'Item'}"
+                        style="width: 100%; box-sizing: border-box; text-align: center; cursor: pointer; margin-top: 10px; display: inline-block; text-decoration: none;">
                     Excluir da Vistoria
-                </button>
+                </a>
             `;
         }
 
@@ -269,7 +276,7 @@ async function openDetailsModal(descricaoInsumo) {
             <div class="form-group">
                 <label for="numero_serial">Nº Serial (Obrigatório):</label>
                 <input type="text" id="numero_serial" name="numero_serial"
-                       list="${serialDatalistId}" autocomplete="off" required>
+                       list="${serialDatalistId}" autocomplete="off">
             </div>
         `;
         // --- ALTERAÇÃO TERMINA AQUI ---
@@ -287,7 +294,7 @@ async function openDetailsModal(descricaoInsumo) {
             <div class="form-group">
                 <label for="local">Localização (Obrigatório):</label>
                 <input type="text" id="local" name="local"
-                       list="${locationDatalistId}" required autocomplete="off">
+                       list="${locationDatalistId}" autocomplete="off">
             </div>
             <div class="form-group">
                 <label for="descricao_item">Descrição (Opcional):</label>
@@ -320,7 +327,6 @@ async function openDetailsModal(descricaoInsumo) {
             validadeInput.addEventListener('input', () => {
                 const ano = validadeInput.value.split('-')[0];
                 if (ano && ano.length > 4) {
-                    alert('O ano deve ter no máximo 4 dígitos.');
                     validadeInput.value = '';
                 }
             });
@@ -329,36 +335,36 @@ async function openDetailsModal(descricaoInsumo) {
     }
 
     if (btnAdicionarInsumo) {
-        btnAdicionarInsumo.addEventListener('click', async (e) => {
-            e.preventDefault();
-            try {
-                const response = await fetch('/api/insumos/tipos', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const tiposDeInsumo = await response.json();
-                const gridContainer =
-                    selectionModal.querySelector('.selection-grid');
-                gridContainer.innerHTML = '';
-                tiposDeInsumo.forEach((tipo) => {
-                    const card = document.createElement('div');
-                    card.className = 'insumo-card-select';
-                    card.innerHTML = `
-                        <img src="${tipo.imagem || 'images/logotipo.png'}" alt="${
-                            tipo.descricao
-                        }">
-                        <h3>${tipo.descricao}</h3>
-                    `;
-                    card.addEventListener('click', () =>
-                        openDetailsModal(tipo.descricao)
-                    );
-                    gridContainer.appendChild(card);
-                });
-                selectionModal.style.display = 'flex';
-            } catch (error) {
-                alert('Erro ao carregar os tipos de insumo.');
-            }
-        });
-    }
+            btnAdicionarInsumo.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    const response = await fetch('/api/insumos/tipos', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    const tiposDeInsumo = await response.json();
+                    const gridContainer =
+                        selectionModal.querySelector('.selection-grid');
+                    gridContainer.innerHTML = '';
+                    tiposDeInsumo.forEach((tipo) => {
+                        const card = document.createElement('div');
+                        card.className = 'insumo-card-select';
+                        card.innerHTML = `
+                            <img src="${tipo.imagem || 'images/logotipo.png'}" alt="${
+                                tipo.descricao
+                            }">
+                            <h3>${tipo.descricao}</h3>
+                        `;
+                        card.addEventListener('click', () =>
+                            openDetailsModal(tipo.descricao)
+                        );
+                        gridContainer.appendChild(card);
+                    });
+                    selectionModal.style.display = 'flex';
+                } catch (error) {
+                    Notifier.showError('Erro ao carregar os tipos de insumo.'); // <--- SUBSTITUÍDO
+                }
+            });
+        }
 
 if (detailsForm) {
         detailsForm.addEventListener('submit', async (event) => {
@@ -381,13 +387,11 @@ if (detailsForm) {
             }
             // --- FIM DA VALIDAÇÃO ---
 
-            const formData = new FormData(detailsForm);
+ const formData = new FormData(detailsForm);
             const data = Object.fromEntries(formData.entries());
             data.filial_cnpj = filialCnpjGlobal;
-            
             const saveButton = detailsForm.querySelector('.btn-save');
             if (saveButton) saveButton.disabled = true;
-            
             try {
                 const response = await fetch(
                     `/api/vistorias/${vistoriaId}/insumos`,
@@ -402,10 +406,12 @@ if (detailsForm) {
                 );
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
+
+                Notifier.showSuccess(result.message || "Insumo adicionado!"); // <--- ADICIONADO
                 closeModal(detailsModal);
                 carregarDadosVistoria();
             } catch (error) {
-                alert(`Erro: ${error.message}`);
+                Notifier.showError(`Erro: ${error.message}`); // <--- SUBSTITUÍDO
             } finally {
                 if (saveButton) saveButton.disabled = false;
             }
@@ -438,12 +444,20 @@ if (detailsForm) {
                 );
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
+                Notifier.showSuccess(result.message || "Vistoria finalizada!", 1500);
+                closeConfirmFinalizarModal(); 
+                setTimeout(() => {
+                    if (filialCnpjGlobal) {
+                        window.location.href = `vistorias.html?cnpj=${filialCnpjGlobal}`;
+                    }
+                }, 1500);
 
-                closeConfirmFinalizarModal(); // Chama a função que agora existe
-                window.location.reload();
             } catch (error) {
-                alert(`Erro ao finalizar: ${error.message}`);
-                closeConfirmFinalizarModal(); // Chama a função que agora existe
+                Notifier.showError(`Erro ao finalizar: ${error.message}`);
+                closeConfirmFinalizarModal(); 
+                // Reabilita o botão em caso de erro
+                confirmFinalizarConfirmBtn.disabled = false;
+                confirmFinalizarConfirmBtn.textContent = 'Finalizar';
             }
         });
     }
@@ -471,13 +485,28 @@ if (detailsForm) {
                     throw new Error(result.message || `Erro ${response.status}`);
                 }
 
+                Notifier.showSuccess(result.message || "Item removido da vistoria."); 
                 closeModal(confirmExcluirItemModal);
                 carregarDadosVistoria();
 
             } catch (error) {
-                alert(`Erro ao excluir item: ${error.message}`);
+                Notifier.showError(`Erro ao excluir item: ${error.message}`); 
                 closeModal(confirmExcluirItemModal);
             }
+        });
+    }
+
+    // Listener do Botão "Cancelar" (ESTAVA FALTANDO)
+    if (confirmExcluirItemCancelBtn) {
+        confirmExcluirItemCancelBtn.addEventListener('click', () => {
+            closeModal(confirmExcluirItemModal);
+        });
+    }
+    
+    // Listener do "X" (ESTAVA FALTANDO)
+    if (confirmExcluirItemCloseBtn) {
+        confirmExcluirItemCloseBtn.addEventListener('click', () => {
+            closeModal(confirmExcluirItemModal);
         });
     }
 
