@@ -129,23 +129,20 @@
     background-color: #21883c;
 }
 
+
 .company-card .institution-name,
 .company-card .company-address,
 .company-card .company-email {
-    white-space: nowrap;      /* 1. Impede o texto de quebrar a linha */
-    overflow: hidden;         /* 2. Esconde o texto que "vaza" da caixa */
-    text-overflow: ellipsis;  /* 3. Adiciona o "..." no final */
-
-    /* Garantia de que o 'overflow' saiba seu limite */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     display: block; 
     width: 100%;
-
-    /* --- INÍCIO DA CORREÇÃO --- */
-    /* Adiciona padding para o texto não colar nas bordas */
-    box-sizing: border-box; /* Garante que o padding não quebre a largura */
+    box-sizing: border-box;
     padding-left: 10px;
     padding-right: 10px;
-    /* --- FIM DA CORREÇÃO --- */
+
+    word-break: break-all; /* Permite quebrar números longos */
 }
 
 

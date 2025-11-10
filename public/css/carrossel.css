@@ -1,0 +1,35 @@
+/*
+ * CORREÇÃO: Truncamento e Alinhamento "Sticky" dos Cards de Insumo
+ *
+ * Afeta: index.html (Carrossel), filial-inventario.html (Grid), vistoria-detalhe.html (Grid)
+*/
+
+/* 1. O Card (Pai) */
+.product-card {
+    display: flex;
+    flex-direction: column; /* Empilha os itens (img, h3, p, footer) */
+    
+    /* Garante que todos os cards na mesma linha tenham a mesma altura */
+    height: 100%; 
+}
+
+/* 2. O Conteúdo de Texto (Nome e Parágrafos) */
+.product-card h3,
+.product-card p {
+    white-space: nowrap;      /* Não quebra a linha */
+    overflow: hidden;         /* Esconde o excesso */
+    text-overflow: ellipsis;  /* Adiciona o "..." */
+    
+    display: block;
+    width: 100%;
+    word-break: break-all;    /* Força a quebra de números longos */
+}
+
+/* 3. O Rodapé (Botões) */
+.product-card .card-footer {
+    /* Esta é a "mágica" do sticky footer */
+    margin-top: auto; 
+    
+    /* Um pouco de espaço antes dos botões */
+    padding-top: 10px; 
+}

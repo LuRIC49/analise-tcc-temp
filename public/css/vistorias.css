@@ -1,4 +1,4 @@
-/* --- CABEÇALHO DE AÇÕES (FILTRO E BOTÃO) --- */
+
 .actions-header {
     display: flex;
     justify-content: space-between;
@@ -95,7 +95,6 @@
 
 
 
-/* --- RESPONSIVIDADE --- */
 @media (min-width: 768px) {
     .vistorias-list {
         grid-template-columns: repeat(2, 1fr);

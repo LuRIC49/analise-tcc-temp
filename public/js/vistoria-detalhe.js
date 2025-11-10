@@ -149,7 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
             <p><strong>Válido até:</strong> ${validadeFormatada}</p>
-            ${deleteButtonHtml}
+            <div class="card-footer">
+                ${deleteButtonHtml}
+            </div>
         `;
         return card;
     }

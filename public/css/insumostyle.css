@@ -53,8 +53,21 @@ body {
     align-items: center;
 }
 .product-card img { width: 150px; height: 120px; object-fit: contain; margin-bottom: 15px; }
-.product-card h3 { margin: 10px 0; font-size: 1.2em; color: #333; }
-.product-card p { margin: 0 0 20px 0; font-size: 1em; color: #555; }
+.product-card h3 {
+     margin: 10px 0; 
+     font-size: 1.2em; 
+     color: #333; 
+    word-break: break-all;
+    }
+.product-card p { 
+    margin: 0 0 20px 0; 
+    font-size: 1em; 
+    color: #555; 
+    word-break: break-all;
+}
+
+
+
 .insumo-details { list-style: none; padding: 0; text-align: left; font-size: 0.9em; }
 .card-buttons { display: flex; flex-direction: column; width: 100%; gap: 10px; margin-top: auto; }
 .card-buttons button { padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }

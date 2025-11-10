@@ -315,8 +315,6 @@
     min-width: 0;     
 }
 
-/* 2. OS FILHOS (Os parágrafos) - Desktop */
-/* Aplica o "..." (ellipsis) */
 .main-content .info-panel-details p {
     white-space: nowrap;      
     overflow: hidden;         
@@ -324,9 +322,11 @@
     display: block; 
     
     box-sizing: border-box;
-    padding-left: 35px;
-    padding-right: 35px;
+    padding-left: 5px;
+    padding-right: 5px;
     margin: 4px 0; 
+
+    word-break: break-all; /* Permite quebrar números longos */
 }
 
 /* 3. A EXCEÇÃO (O CNPJ) - Desktop */

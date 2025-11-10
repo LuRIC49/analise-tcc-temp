@@ -80,7 +80,7 @@ async function initializeCarousel() {
 
             // Botões de CRUD (só aparecem se logado E se NÃO for base)
             const crudButtonsHTML = !isBase ? `
-                <div class="crud-buttons" style="display: flex; gap: 5px; margin-top: 10px;">
+                <div class="crud-buttons card-footer" style="display: flex; gap: 5px; margin-top: 10px;">
                     <button class="btn-action btn-delete" data-id="${insumo.codigo}" data-descricao="${insumo.descricao}" style="background-color: #dc3545; color: white; padding: 5px 8px; border: none; cursor: pointer; font-size: 0.9em; flex: 1;">Excluir</button>
                     <button class="btn-action btn-edit" data-id="${insumo.codigo}" style="background-color: #007bff; color: white; padding: 5px 8px; border: none; cursor: pointer; font-size: 0.9em; flex: 1;">Editar</button>
                 </div>
