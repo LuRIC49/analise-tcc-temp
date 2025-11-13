@@ -92,69 +92,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function createInsumoCard(item, isAberta) {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        let statusClass = 'status-ok';
-        let validadeFormatada =
-            item.validade_formatada || formatDateForClient(item.validade) || 'N/A';
-        if (item.validade) {
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            const dataValidade = parseDateAsLocal(item.validade);
-            if (dataValidade) {
-                const diffTime = dataValidade - hoje;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                if (diffDays < 0) {
-                    statusClass = 'status-expired';
-                } else if (diffDays <= 30) {
-                    statusClass = 'status-warning';
-                }
-            } else {
-                validadeFormatada = 'Data Inválida';
+function createInsumoCard(item, isAberta) {
+    const card = document.createElement('div');
+    card.className = 'product-card'; // <-- Usa a classe base
+
+    let statusClass = 'status-ok';
+    let validadeFormatada =
+        item.validade_formatada || formatDateForClient(item.validade) || 'N/A';
+    
+    if (item.validade) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const dataValidade = parseDateAsLocal(item.validade);
+        if (dataValidade) {
+            const diffTime = dataValidade - hoje;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays < 0) {
+                statusClass = 'status-expired';
+            } else if (diffDays <= 30) {
+                statusClass = 'status-warning';
             }
-        }
-        card.classList.add(statusClass);
-        let cardTitle = '';
-        if (item.numero_serial && item.numero_serial.trim() !== '') {
-            cardTitle = `Serial: ${item.numero_serial}`;
         } else {
-            cardTitle = item.tipo_insumo || 'Insumo';
+            validadeFormatada = 'Data Inválida';
         }
-        const imageUrl = item.imagem || 'images/logotipo.png';
-
-        let deleteButtonHtml = '';
-        if (isAberta && item.codigo) {
-        deleteButtonHtml = `
-                <a href="#" class="btn-access-info btn-danger btn-excluir-historico"
-                        data-id="${item.codigo}" 
-                        data-serial="${item.numero_serial || 'Item'}"
-                        style="width: 100%; box-sizing: border-box; text-align: center; cursor: pointer; margin-top: 10px; display: inline-block; text-decoration: none;">
-                    Excluir da Vistoria
-                </a>
-            `;
-        }
-
-        card.innerHTML = `
-            <img src="${imageUrl}" alt="${
-                item.tipo_insumo || 'Insumo'
-            }" style="width: 100px; height: 80px; object-fit: contain; margin-bottom: 15px;">
-            <h3>${cardTitle}</h3>
-            ${
-                item.numero_serial &&
-                item.numero_serial.trim() !== '' &&
-                item.tipo_insumo
-                    ? `<p style="font-size: 0.9em; color: #555;">(${item.tipo_insumo})</p>`
-                    : ''
-            }
-            <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
-            <p><strong>Válido até:</strong> ${validadeFormatada}</p>
-            <div class="card-footer">
-                ${deleteButtonHtml}
-            </div>
-        `;
-        return card;
     }
+    card.classList.add(statusClass); 
+
+    let cardTitle = '';
+    if (item.numero_serial && item.numero_serial.trim() !== '') {
+        cardTitle = `Serial: ${item.numero_serial}`;
+    } else {
+        cardTitle = item.tipo_insumo || 'Insumo';
+    }
+
+    const imageUrl = item.imagem || 'images/logotipo.png';
+
+    let deleteButtonHtml = '';
+    if (isAberta && item.codigo) {
+    deleteButtonHtml = `
+            <a href="#" class="btn-access-info btn-danger btn-excluir-historico"
+                    data-id="${item.codigo}" 
+                    data-serial="${item.numero_serial || 'Item'}"
+                    style="width: 100%; box-sizing: border-box; text-align: center; cursor: pointer; display: inline-block; text-decoration: none;">
+                Excluir da Vistoria
+            </a>
+        `;
+    }
+
+    const tipoInsumoHtml = (item.numero_serial && item.numero_serial.trim() !== '' && item.tipo_insumo)
+        ? `<p class="insumo-type-paragraph">(${item.tipo_insumo})</p>`
+        : '';
+
+    card.innerHTML = `
+        <img src="${imageUrl}" alt="${item.tipo_insumo || 'Insumo'}">
+        <h3>${cardTitle}</h3>
+        ${tipoInsumoHtml}
+        <p><strong>Local:</strong> ${item.local || 'Não informado'}</p>
+        <p><strong>Válido até:</strong> ${validadeFormatada}</p>
+        <div class="card-footer">
+            ${deleteButtonHtml}
+        </div>
+    `;
+    return card;
+}
 
     function closeModal(modalElement) {
         if (modalElement) modalElement.style.display = 'none';
@@ -245,23 +245,21 @@ async function openDetailsModal(descricaoInsumo) {
         let seriais = [];
         let locais = [];
 
-        // --- ALTERAÇÃO INICIA AQUI ---
-        // A condição "if includes('extintor')" foi REMOVIDA.
-        // Sempre busca seriais, pois todos os insumos agora os utilizam.
         if (filialCnpjGlobal) {
             try {
+                // 1. Busca seriais filtrados pelo tipo (descricaoInsumo)
                 const response = await fetch(
-                    `/api/insumos/filial/${filialCnpjGlobal}/seriais`,
+                    `/api/insumos/filial/${filialCnpjGlobal}/seriais-por-tipo?tipo=${encodeURIComponent(descricaoInsumo)}`, 
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 if (response.ok) seriais = await response.json();
-            } catch (error) {
-                console.warn('Não foi possível carregar seriais:', error);
+            } catch (error) { 
+                console.warn("Não foi possível carregar seriais por tipo:", error); 
             }
-            // Busca locais (lógica original mantida)
+            
+            // 2. Busca locais (lógica original mantida)
             locais = await fetchLocations(filialCnpjGlobal);
         }
-        // --- ALTERAÇÃO TERMINA AQUI ---
 
         let serialInputHtml = '';
         const serialDatalistId = 'serial-list-vistoria';

@@ -1,3 +1,7 @@
+/* =================================================================== */
+/* === ARQUIVO COMPLETO: filial-inventario.css === */
+/* =================================================================== */
+
 /* --- ESTRUTURA PRINCIPAL (CONTÊINER BRANCO) --- */
 .main-content {
     max-width: 1320px;
@@ -36,50 +40,6 @@
     text-align: left;
 }
 
-
-/*
- * ADIÇÃO: Truncamento de Texto (Ellipsis) no Painel de Informações
-*/
-
-/* 1. O PAI (O Container dos Detalhes) */
-/* Esta é a correção principal: forçamos o item flex a encolher */
-.info-panel-details {
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Alinha verticalmente, se houver espaço */
-    
-    /* O "truque" do flexbox para permitir o encolhimento */
-    overflow: hidden; 
-    min-width: 0;     
-}
-
-/* 2. OS FILHOS (Os parágrafos) */
-/* Agora que o pai está fixo, esta regra vai funcionar */
-.info-panel-details p {
-    white-space: nowrap;      /* Impede a quebra de linha */
-    overflow: hidden;         /* Esconde o excesso */
-    text-overflow: ellipsis;  /* Adiciona "..." */
-
-    /* Remove 'width: 100%' - desnecessário agora */
-    
-    /* Mantém o padding para respirar */
-    box-sizing: border-box;
-    padding-left: 5px;
-    padding-right: 5px;
-    
-    /* Define uma margem padrão para espaçamento */
-    margin: 4px 0; 
-}
-
-/* 3. A EXCEÇÃO (O CNPJ) */
-/* Sobrescreve o <p> do CNPJ para que ele NUNCA seja truncado */
-.info-panel-details #filial-cnpj-info {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset; /* Reseta o 'ellipsis' */
-}
-
-
 /* --- BOTÃO DE AÇÃO --- */
 .page-actions {
     width: 100%;
@@ -103,32 +63,10 @@
     border: none; /* Garante que não haja borda */
     cursor: pointer; /* Adiciona cursor de ponteiro para <button> */
     text-align: center; /* Centraliza texto */
-    /* Cores específicas são definidas inline ou por ID/classe específica */
 }
 .btn-action:hover {
     background-color: #0056b3;
 }
-
-
-
-.btn-details {
-    display: block;
-    background-color: #28a745;
-    color: white;
-    text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-    width: fit-content;
-    margin: 0 auto;
-}
-
-.btn-details:hover {
-    background-color: #21883c;
-}
-
-
 
 /* --- SEÇÃO DE INSUMOS --- */
 .insumos-section {
@@ -148,8 +86,6 @@
     margin-bottom: 20px;
 }
 
-/* --- RESPONSIVIDADE --- */
-/* Apenas para telas de desktop, aplicamos a largura mínima */
 @media (min-width: 1200px) {
     .main-content {
         min-width: 1200px;
@@ -166,27 +102,27 @@
         text-align: center;
         justify-content: center;
     }
+    
+    .info-panel-details {
+        width: 100%;
+    }
     .info-panel-details p {
         text-align: center;
         font-size: 1.1em;
     }
-.page-actions {
+    .page-actions {
         flex-direction: column; /* Empilha os botões verticalmente */
         align-items: stretch; /* Faz os botões esticarem para ocupar a largura */
         justify-content: center; /* Centraliza (opcional) */
         gap: 15px; /* Aumenta o espaço vertical entre botões empilhados */
     }
-
     .btn-action {
         width: 100%; /* Faz cada botão ocupar a largura total */
         box-sizing: border-box; /* Garante que padding não estoure a largura */
-        /* Padding vertical pode ser ajustado se necessário para mobile */
-        /* padding: 15px 20px; */
     }
 }
 
-
-
+/* --- Cores Específicas dos Botões de Ação --- */
 #btnAdicionarInsumoDireto { background-color: #28a745; }
 #btnAdicionarInsumoDireto:hover { background-color: #218838; }
 #btnVerVistorias { background-color: #007bff; }
@@ -194,120 +130,119 @@
 #btnGerarRelatorio { background-color: #17a2b8; }
 #btnGerarRelatorio:hover { background-color: #117a8b; }
 
-
 .products-section {
-    display: flex;
+    display: grid;
     flex-wrap: wrap;
     gap: 20px;
     padding: 10px 0;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .product-card {
-    /* Adiciona uma borda mais grossa para destacar o status */
-    border: 3px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 390px;
+    box-sizing: border-box;
+    
+    /* --- Estilo Visual --- */
     background-color: #ffffff;
+    border: 3px solid #ddd; /* Borda padrão */
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     text-align: center;
     padding: 20px;
-    width: 300px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.product-card img {
+    width: 150px;
+    height: 120px;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+
+.product-card h3 {
+    margin: 10px 0;
+    font-size: 1.2em;
+    color: #333;
+    width: 100%;
+    padding: 0 5px;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    min-height: auto; 
+    line-height: 1.2em;
+    height: 1.2em;
 }
 
-.product-card img { 
-    width: 150px; 
-    height: 120px; 
-    object-fit: contain; 
-    margin-bottom: 15px; 
+.product-card p {
+    margin: 5px 0 10px 0;
+    font-size: 1em;
+    color: #555;
+    
+    width: 100%;             
+    padding: 0 5px;          
+    box-sizing: border-box;  
+    
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; 
+    word-break: normal;
 }
 
-.product-card h3 { 
-    margin: 10px 0; 
-    font-size: 1.2em; 
-    color: #333; 
+/* --- Footer (Sempre no fundo) --- */
+.product-card .card-footer {
+    margin-top: auto; /* Empurra o footer para o fundo do card */
+    width: 100%;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
 }
 
-.product-card p { 
-    margin: 0 0 20px 0; 
-    font-size: 1em; 
-    color: #555; 
-}
-
-/* Estilos para colorir o card inteiro (fundo e borda) */
+/* --- Estilos de Status (Padrão) --- */
 .product-card.status-ok {
     background-color: #e6ffe6; /* Verde claro */
     border-color: #28a745; /* Verde */
 }
-
 .product-card.status-warning {
     background-color: #fffbe6; /* Amarelo claro */
     border-color: #ffc107; /* Amarelo */
 }
-
 .product-card.status-expired {
     background-color: #ffe6e6; /* Vermelho claro */
     border-color: #dc3545; /* Vermelho */
 }
+/* === FIM ESTILO BASE UNIFICADO === */
 
 
+/* =================================================================== */
+/* === DELTA: filial-inventario.css === */
+/* (Estilo específico para o botão "Ver Detalhes" desta página) */
+/* =================================================================== */
 
-
-
-
-
-
-
-
-
-/*
- * ADIÇÃO: Truncamento de Texto (Ellipsis) no Painel de Informações
- *
- * Isso afeta os elementos de informação no topo da página.
-*/
-.info-panel-details p {
-    /* Estas 3 propriedades juntas criam o efeito "..." */
-    white-space: nowrap;      /* 1. Impede o texto de quebrar a linha */
-    overflow: hidden;         /* 2. Esconde o texto que "vaza" da caixa */
-    text-overflow: ellipsis;  /* 3. Adiciona o "..." no final */
-
-    /* Garantia de que o 'overflow' saiba seu limite */
-    display: block; 
-    width: 100%;
-    
-    /* Adiciona padding para o texto não colar nas bordas */
-    box-sizing: border-box; /* Garante que o padding não quebre a largura */
-    padding-left: 5px;  /* Um padding menor pode ficar melhor aqui */
-    padding-right: 5px;
+.product-card .btn-details {
+    display: inline-block;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
 }
-
-/* * Sobrescreve a regra para o CNPJ, que não deve ser truncado
- * (caso o seletor 'p' acima o afete).
-*/
-.info-panel-details #filial-cnpj-info {
-    white-space: normal;
-    overflow: visible;
+.product-card .btn-details:hover {
+    background-color: #21883c;
 }
 
 
-
-
-
-
-
-
-/*
- * ADIÇÃO: Correção de Layout (Truncamento e Responsividade)
- *
- * Esta é a versão definitiva que usa seletores mais fortes
- * e '!important' para garantir que as regras sejam aplicadas.
-*/
-
-/* 1. O PAI (O Container dos Detalhes) - Desktop */
-/* Força o 'min-width' para permitir o truncamento dos filhos */
-.main-content .info-panel-details {
+.info-panel-details {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -315,49 +250,20 @@
     min-width: 0;     
 }
 
-.main-content .info-panel-details p {
+.info-panel-details p {
     white-space: nowrap;      
     overflow: hidden;         
     text-overflow: ellipsis;  
     display: block; 
-    
+    width: 100%;
     box-sizing: border-box;
     padding-left: 5px;
     padding-right: 5px;
     margin: 4px 0; 
-
-    word-break: break-all; /* Permite quebrar números longos */
 }
 
-/* 3. A EXCEÇÃO (O CNPJ) - Desktop */
-.main-content .info-panel-details #filial-cnpj-info {
+.info-panel-details #filial-cnpj-info {
     white-space: normal;
     overflow: visible;
     text-overflow: unset;
-}
-
-
-/* 4. RESPONSIVIDADE (Telas Pequenas) */
-@media (max-width: 600px) {
-
-    /* Força o container a empilhar verticalmente */
-    .main-content .info-panel {
-        flex-direction: column !important; /* MUDANÇA CRÍTICA */
-        align-items: center;
-        gap: 15px;
-    }
-
-    .main-content .info-panel-logo {
-        margin-bottom: 10px;
-    }
-
-    /* Centraliza os textos */
-    .main-content .info-panel-details {
-        align-items: center; 
-        max-width: 90vw; 
-    }
-
-    .main-content .info-panel-details p {
-        text-align: center;
-    }
 }

@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    if (btnGerarRelatorio) {
+if (btnGerarRelatorio) {
         btnGerarRelatorio.addEventListener('click', async () => {
             if (!filialCnpj) {
                 alert('CNPJ da filial não encontrado. Não é possível gerar o relatório.');
@@ -57,8 +57,27 @@ document.addEventListener('DOMContentLoaded', () => {
             btnGerarRelatorio.disabled = true;
             btnGerarRelatorio.textContent = 'Gerando...';
 
+            // --- INÍCIO DA MODIFICAÇÃO ---
+            // 1. Pega os valores atuais dos filtros
+            const status = statusFilter.value;
+            const serial = serialSearchInput.value;
+
+            // 2. Constrói a query string
+            const params = new URLSearchParams();
+            if (status && status !== 'todos') {
+                params.append('status', status);
+            }
+            if (serial && serial.trim() !== '') {
+                params.append('serial', serial);
+            }
+            const queryString = params.toString();
+            
+            // 3. Adiciona a query string à URL do fetch
+            const fetchUrl = `/api/filiais/${filialCnpj}/report?${queryString}`;
+            // --- FIM DA MODIFICAÇÃO ---
+
             try {
-                const response = await fetch(`/api/filiais/${filialCnpj}/report`, {
+                const response = await fetch(fetchUrl, { // <-- Usa a nova URL
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -72,28 +91,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorMsg);
                 }
 
-                // Recebe o PDF como Blob
                 const blob = await response.blob();
-
-                // Cria URL temporária para o Blob
                 const url = window.URL.createObjectURL(blob);
-
-                // Cria link temporário para iniciar download
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                // Define o nome do arquivo (pode ser pego do header Content-Disposition se o backend enviar)
                 a.download = `Relatorio_Inventario_${filialCnpj}.pdf`; 
                 document.body.appendChild(a);
                 a.click();
-
-                // Limpeza
                 window.URL.revokeObjectURL(url);
                 a.remove();
 
             } catch (error) {
                 console.error('Erro ao gerar ou baixar relatório:', error);
-                alert(`Não foi possível gerar o relatório: ${error.message}`);
+                Notifier.showError(`Não foi possível gerar o relatório: ${error.message}`); // <-- Usei o Notifier
             } finally {
                 btnGerarRelatorio.disabled = false;
                 btnGerarRelatorio.textContent = originalButtonText;
@@ -348,19 +359,21 @@ async function fetchLocations(cnpj) {
                 let seriais = [];
                 let locais = [];
 
-                // --- ALTERAÇÃO INICIA AQUI ---
-                        // A condição "if includes('extintor')" foi REMOVIDA.
-                        // Sempre busca seriais, pois todos os insumos agora os utilizam.
                 if (filialCnpj) {
-                try {
-                const response = await fetch(`/api/insumos/filial/${filialCnpj}/seriais`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (response.ok) seriais = await response.json();
-                } catch (error) { console.warn("Não foi possível carregar seriais:", error); }
-                            
-                            // Busca locais (lógica original mantida)
-                locais = await fetchLocations(filialCnpj); // Usa a função helper
+                    try {
+                        // 1. Busca seriais filtrados pelo tipo (descricaoInsumo)
+                        const response = await fetch(
+                            `/api/insumos/filial/${filialCnpj}/seriais-por-tipo?tipo=${encodeURIComponent(descricaoInsumo)}`, 
+                            { headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        if (response.ok) seriais = await response.json();
+                    } catch (error) { 
+                        console.warn("Não foi possível carregar seriais por tipo:", error); 
+                    }
+                    
+                    // 2. Busca locais (lógica original mantida)
+                    locais = await fetchLocations(filialCnpj);
                 }
-                // --- ALTERAÇÃO TERMINA AQUI ---
 
 
                 // --- MONTAGEM DO HTML ---

@@ -1,3 +1,7 @@
+/* =================================================================== */
+/* === ARQUIVO COMPLETO: vistoria-detalhe.css === */
+/* =================================================================== */
+
 /* --- SEÇÃO DE DETALHES DA VISTORIA (TOPO) --- */
 #vistoria-details-section {
     padding-bottom: 20px;
@@ -21,8 +25,10 @@
 .filial-info p {
     margin: 5px;
     font-size: 1.1em;
-}
 
+    overflow-wrap: break-word;
+    min-width: 0; 
+}
 /* --- SEÇÃO DE INSUMOS E BOTÕES DE AÇÃO --- */
 .section-title {
     text-align: center;
@@ -64,13 +70,7 @@
     background-color: #b71c1c;
 }
 
-/* --- LISTA DE INSUMOS --- */
-#insumos-section .products-section {
-    padding-top: 10px;
-    min-height: 100px;
-}
-
-/* --- RESPONSIVIDADE --- */
+/* --- RESPONSIVIDADE (Topo) --- */
 @media (max-width: 768px) {
     #vistoria-title {
         font-size: 1.6em;
@@ -79,6 +79,134 @@
         width: 100%;
         text-align: center;
         box-sizing: border-box;
-        padding: 15px; /* Aumenta a área de toque no mobile */
+        padding: 15px;
     }
+}
+
+
+/* =================================================================== */
+/* === INÍCIO ESTILO BASE UNIFICADO .product-card === */
+/* (Copiado de filial-inventario.css) */
+/* =================================================================== */
+
+.products-section {
+    display: grid;
+    gap: 20px;
+    padding: 10px 0;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    min-height: 100px;
+}
+
+.product-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 390px; /* <-- MUDANÇA (de min-height: 420px para height: 390px) */
+    box-sizing: border-box;
+    background-color: #ffffff;
+    border: 3px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-align: center;
+    padding: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.product-card img {
+    width: 150px;
+    height: 120px;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+
+.product-card h3 {
+    margin: 10px 0;
+    font-size: 1.2em;
+    color: #333;
+
+    /* --- MUDANÇA (Regras de truncamento "...") --- */
+    width: 100%;
+    padding: 0 5px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    min-height: auto; 
+    line-height: 1.2em;
+    height: 1.2em;
+}
+
+.product-card p {
+    margin: 5px 0 10px 0;
+    font-size: 1em;
+    color: #555;
+    
+    /* --- MUDANÇA (Regras de truncamento "...") --- */
+    width: 100%;             
+    padding: 0 5px;          
+    box-sizing: border-box;  
+    white-space: nowrap;     
+    overflow: hidden;        
+    text-overflow: ellipsis; 
+    word-break: normal;
+}
+
+.product-card .card-footer {
+    margin-top: auto;
+    width: 100%;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.product-card.status-ok {
+    background-color: #e6ffe6;
+    border-color: #28a745;
+}
+.product-card.status-warning {
+    background-color: #fffbe6;
+    border-color: #ffc107;
+}
+.product-card.status-expired {
+    background-color: #ffe6e6;
+    border-color: #dc3545;
+}
+/* === FIM ESTILO BASE UNIFICADO === */
+
+
+/* =================================================================== */
+/* === DELTA: vistoria-detalhe.css === */
+/* (Estilos específicos para os cards desta página) */
+/* =================================================================== */
+
+/* 1. Ajuste de conteúdo: O tipo é um <p> e não um <h3> */
+.product-card p.insumo-type-paragraph {
+    font-size: 0.9em;
+    color: #555;
+    font-style: italic;
+    margin-top: -10px; /* Puxa para perto do H3 (Serial) */
+    margin-bottom: 15px;
+}
+
+/* 2. Estiliza o footer específico (botão de excluir) */
+.product-card .btn-excluir-historico {
+    display: inline-block;
+    background-color: #dc3545; /* Cor vermelha */
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+    width: 100%; /* Ocupa todo o footer */
+    box-sizing: border-box;
+}
+
+.product-card .btn-excluir-historico:hover {
+    background-color: #c82333;
 }

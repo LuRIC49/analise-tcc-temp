@@ -214,6 +214,36 @@ exports.listarSeriaisPorFilial = async (req, res) => {
     }
 };
 
+exports.listarSeriaisPorFilialETipo = async (req, res) => {
+    try {
+        const { cnpj: filialCnpj } = req.params;
+        const { tipo } = req.query; // Recebe a descrição do tipo, ex: "Extintor CO2"
+
+        if (!tipo) {
+            return res.json([]); // Retorna vazio se nenhum tipo for fornecido
+        }
+
+        // 1. Encontrar o código do insumo a partir da descrição
+        const [rows] = await db.query('SELECT codigo FROM insumo WHERE descricao = ?', [tipo]);
+
+        // Se o tipo não existe no banco, não há seriais para ele.
+        if (rows.length === 0) {
+            return res.json([]);
+        }
+        
+        const insumoCodigo = rows[0].codigo;
+
+        // 2. Buscar seriais pelo código e filial
+        const seriais = await InsumoFilial.findSeriaisByFilialAndCodigo(filialCnpj, insumoCodigo);
+        res.json(seriais);
+
+    } catch (error) {
+        console.error('Erro ao listar números de serial por tipo:', error);
+        res.status(500).json({ message: 'Erro interno do servidor.' });
+    }
+};
+
+
 exports.listarLocaisPorFilial = async (req, res) => {
     try {
         const { cnpj: filialCnpj } = req.params;
@@ -445,24 +475,51 @@ exports.excluirRegistroHistorico = async (req, res) => {
 exports.gerarRelatorioInventario = async (req, res) => {
     try {
         const { cnpj: filialCnpj } = req.params;
+        const { empresaCnpj } = req.user;
+        
+        // --- INÍCIO DA MODIFICAÇÃO ---
+        // 1. Pega os filtros da query string
+        const { status, serial } = req.query;
+
+        // 2. Busca TODOS os dados brutos (como antes)
         const inventarioBruto = await InsumoFilial.findByFilial(filialCnpj);
-        const filialDetails = await Filial.findById(filialCnpj, req.user.empresaCnpj);
-        const inventarioOrdenado = sortInventoryByValidity(inventarioBruto);
+        const filialDetails = await Filial.findById(filialCnpj, empresaCnpj);
+
+        // 3. Aplica os filtros (lógica similar à do frontend)
+        let inventarioFiltrado = inventarioBruto;
+
+        if (status && status !== 'todos') {
+            inventarioFiltrado = inventarioFiltrado.filter(item => item.status === status);
+        }
+
+        if (serial) {
+            const termoSerial = serial.toLowerCase();
+            inventarioFiltrado = inventarioFiltrado.filter(item => 
+                item.numero_serial && item.numero_serial.toLowerCase().includes(termoSerial)
+            );
+        }
+        
+        // 4. Verifica se a filtragem resultou em algo
+        if (inventarioFiltrado.length === 0) {
+            // Envia um erro em JSON, que o frontend irá capturar no catch
+            return res.status(404).json({ message: 'Nenhum item encontrado para os filtros selecionados.' });
+        }
+        
+        // 5. Ordena e gera o PDF apenas com os dados filtrados
+        const inventarioOrdenado = sortInventoryByValidity(inventarioFiltrado);
+        // --- FIM DA MODIFICAÇÃO ---
+
         const filename = `Relatorio_Inventario_${filialCnpj}_${new Date().toISOString().split('T')[0]}.pdf`;
-        console.log("[Controller] Dados antes de gerar PDF (verificar 'imagem'):",
-            inventarioOrdenado.map(item => ({
-                codigo: item.codigo,
-                descricao: item.descricao,
-                imagem_type: Buffer.isBuffer(item.imagem) ? `Buffer(${item.imagem.length})` : typeof item.imagem
-            }))
-        );
+        
+        // (O restante da sua lógica de streaming de PDF)
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         await createInventoryPdf(inventarioOrdenado, filialDetails, res);
+
     } catch (error) {
         console.error('Erro ao gerar relatório de inventário:', error);
         if (!res.headersSent) {
-             res.status(500).json({ message: 'Erro interno ao gerar o relatório.' });
+             res.status(500).json({ message: error.message || 'Erro interno ao gerar o relatório.' });
         } else {
              console.error("Erro após início do envio do PDF. Resposta pode estar incompleta.");
              res.end();

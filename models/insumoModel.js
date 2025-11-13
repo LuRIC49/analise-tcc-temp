@@ -278,8 +278,27 @@ class InsumoFilial {
         return rows.map(row => row.numero_serial);
     }
 
+    /**
+     * Busca todos os números de seriais distintos para uma filial E UM TIPO DE INSUMO.
+     * @param {string} filialCnpj
+     * @param {number} insumoCodigo
+     * @returns {Promise<Array<string>>}
+     */
+    static async findSeriaisByFilialAndCodigo(filialCnpj, insumoCodigo) {
+        const query = `
+            SELECT DISTINCT numero_serial 
+            FROM insumo_filial_mutavel 
+            WHERE filial_cnpj = ? 
+              AND insumo_codigo = ? 
+              AND numero_serial IS NOT NULL 
+            ORDER BY numero_serial ASC;
+        `;
+        const [rows] = await db.query(query, [filialCnpj, insumoCodigo]);
+        return rows.map(row => row.numero_serial);
+    }
+
     // Busca todos os locais (distintos) usados por uma filial na tabela mutável.
-    static async findLocationsByFilial(filialCnpj) { // Pode estar em filialModel.js
+    static async findLocationsByFilial(filialCnpj) { 
         const query = ` SELECT DISTINCT local FROM insumo_filial_mutavel WHERE filial_cnpj = ? AND local IS NOT NULL AND local <> '' ORDER BY local ASC; `;
         const [rows] = await db.query(query, [filialCnpj]);
         return rows.map(row => row.local);

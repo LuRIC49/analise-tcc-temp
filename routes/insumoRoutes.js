@@ -38,6 +38,8 @@ router.get('/filial/:cnpj', authenticateToken, checkFilialOwnership, inventarioC
 // [NOVA ROTA] Rota para buscar os seriais de uma filial (para autocomplete)
 router.get('/filial/:cnpj/seriais', authenticateToken, checkFilialOwnership, inventarioController.listarSeriaisPorFilial);
 
+router.get('/filial/:cnpj/seriais-por-tipo', authenticateToken, checkFilialOwnership, inventarioController.listarSeriaisPorFilialETipo);
+
 // Rota para ADICIONAR um insumo direto ao inventário (sem vistoria)
 router.post('/filial/:cnpj/direto', authenticateToken, checkFilialOwnership, inventarioController.adicionarInsumoDireto);
 

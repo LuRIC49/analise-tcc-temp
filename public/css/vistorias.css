@@ -74,6 +74,11 @@
     margin: 0 0 10px 0;
     color: #555;
     line-height: 1.6;
+
+    width: 100%;             
+    white-space: nowrap;     
+    overflow: hidden;        
+    text-overflow: ellipsis; 
 }
 
 .vistoria-card-footer {

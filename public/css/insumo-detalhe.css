@@ -126,3 +126,13 @@
         align-items: stretch; /* Faz os botões ocuparem a largura */
     }
 }
+
+
+
+.detail-container h1 {
+    overflow-wrap: break-word;
+}
+
+.detail-info p {
+    word-break: break-all;
+}

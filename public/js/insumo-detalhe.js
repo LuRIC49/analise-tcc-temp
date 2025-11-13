@@ -195,9 +195,7 @@ async function carregarDetalhesInsumo() {
             currentInsumoData = insumo;
 
             document.title = insumo.tipo_insumo;
-            insumoTitle.textContent = `Detalhes: ${insumo.tipo_insumo}`;
             insumoImage.src = insumo.imagem || 'images/logotipo.png';
-            insumoCodigo.textContent = insumo.codigo;
             insumoTipo.textContent = insumo.tipo_insumo;
             insumoLocal.textContent = insumo.local || 'Não informado';
             insumoValidade.textContent = insumo.validade_formatada; 

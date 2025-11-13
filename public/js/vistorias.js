@@ -1,31 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Seletores DOM Principais ---
+
     const vistoriasListDiv = document.getElementById('vistorias-list');
     const btnIniciarVistoria = document.getElementById('btnIniciarVistoria');
     const vistoriasTitle = document.getElementById('vistorias-title');
     const filtroVistorias = document.getElementById('filtro-vistorias');
+    const btnVoltar = document.getElementById('btnVoltar');
 
-    // --- Seletores DOM - Modal Iniciar Vistoria ---
+    //Modal Start vistoria
     const promptModal = document.getElementById('promptModal');
     const promptInput = document.getElementById('promptInput');
     const promptConfirmBtn = document.getElementById('promptConfirmBtn');
     const promptCancelBtn = promptModal?.querySelector('.btn-cancel');
     const promptCloseBtn = promptModal?.querySelector('.modal-close-btn');
 
-    // --- Seletores DOM - Modal Excluir Vistoria ---
+    //Modal Delet Vistoria ---
     const confirmExcluirVistoriaModal = document.getElementById('confirmExcluirVistoriaModal');
     const confirmExcluirVistoriaCancelBtn = document.getElementById('confirmExcluirVistoriaCancelBtn');
     const confirmExcluirVistoriaConfirmBtn = document.getElementById('confirmExcluirVistoriaConfirmBtn');
     const confirmExcluirVistoriaCloseBtn = document.getElementById('confirmExcluirVistoriaCloseBtn');
 
-    // --- Variáveis de Estado ---
     const token = localStorage.getItem('authToken');
     const urlParams = new URLSearchParams(window.location.search);
     const filialCnpj = urlParams.get('cnpj');
     let todasAsVistorias = [];
     let vistoriaParaExcluirId = null;
 
-    // --- Verificações Iniciais ---
     if (!token) {
         window.location.href = 'login.html';
         return;
@@ -34,8 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('main').innerHTML = '<h1>Erro: CNPJ da filial não fornecido na URL.</h1>';
         return;
     }
+    if (btnVoltar) {
+        btnVoltar.href = `filial-inventario.html?cnpj=${filialCnpj}`;
+    }
 
-    // --- Funções Principais (Dados e Renderização) ---
 
     // Define o título da página com o nome da filial.
     async function setPageTitle() {
@@ -46,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (vistoriasTitle) vistoriasTitle.textContent = `Vistorias da Filial: ${filial.nome}`;
             document.title = `Vistorias: ${filial.nome}`;
         } catch (error) {
-            console.error("Erro ao buscar nome da filial:", error);
+            console.error(error);
         }
     }
 
@@ -64,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Filtra e ordena as vistorias conforme seleção.
     function aplicarFiltro() {
         if (!filtroVistorias) return;
         const filtroSelecionado = filtroVistorias.value;
@@ -79,7 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarVistorias(vistoriasFiltradas);
     }
 
-    // Exibe a lista de vistorias na tela.
+
+    
     function renderizarVistorias(vistoriasParaRenderizar) {
         if (!vistoriasListDiv) return;
         vistoriasListDiv.innerHTML = '';
@@ -93,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Cria o HTML para um card de vistoria.
     function createVistoriaCard(vistoria) {
         const dataInicio = new Date(vistoria.data_inicio).toLocaleDateString();
         const isAberta = vistoria.data_fim === null;
@@ -133,21 +133,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     }
 
-    // --- Funções de Manipulação de Modais ---
 
-    // Abre um modal genérico.
+
     function openModal(modalElement) {
         if (modalElement) modalElement.style.display = 'flex';
     }
 
-    // Fecha um modal genérico e reseta estados específicos.
     function closeModal(modalElement) {
         if (modalElement) modalElement.style.display = 'none';
 
         if (modalElement === promptModal) {
             if (promptInput) {
                 promptInput.value = '';
-                clearError(promptInput); // <-- ADICIONADO
+                clearError(promptInput);
             }
             if (promptConfirmBtn) {
                 promptConfirmBtn.disabled = true;
@@ -165,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Abre modal específico para excluir vistoria.
     function openConfirmExcluirVistoriaModal(id) {
         vistoriaParaExcluirId = id;
         if (confirmExcluirVistoriaConfirmBtn) {
@@ -174,18 +171,17 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(confirmExcluirVistoriaModal);
     }
 
-    // --- Lógica das Ações ---
 
     async function handleIniciarVistoria() {
         if (!promptInput || !promptConfirmBtn) return;
 
-        // --- INÍCIO DA VALIDAÇÃO (SUBSTITUI O ALERT) ---
+
         const isTecnicoValid = validateRequired(promptInput, 'Nome do técnico responsável');
         if (!isTecnicoValid) {
             promptInput.focus();
-            return; // Impede o envio
+            return;
         }
-        // --- FIM DA VALIDAÇÃO ---
+
         
         const tecnicoResponsavel = promptInput.value.trim();
 
@@ -209,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Envia requisição para excluir vistoria.
+    //Requisição delet vistoria.
     async function handleExcluirVistoria() {
         if (!vistoriaParaExcluirId || !confirmExcluirVistoriaConfirmBtn) return;
 
@@ -234,12 +230,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Anexação de Event Listeners ---
+
     function initializeEventListeners() {
-        // Filtro
         filtroVistorias?.addEventListener('change', aplicarFiltro);
 
-        // Botão Iniciar Vistoria (Abre Modal)
+        //Abre Modal
         btnIniciarVistoria?.addEventListener('click', (event) => {
             event.preventDefault();
             openModal(promptModal);
@@ -248,14 +243,13 @@ document.addEventListener('DOMContentLoaded', () => {
         promptInput?.addEventListener('input', () => {
             if (promptConfirmBtn) promptConfirmBtn.disabled = promptInput.value.trim() === '';
             
-            // Valida em tempo real enquanto digita (ou apaga)
+            // Valida em tempo real enquanto digita
             if (promptInput.value.trim() === '') {
                 validateRequired(promptInput, 'Nome do técnico responsável');
             } else {
                 clearError(promptInput);
             }
         });
-        // Adiciona 'blur' para garantir a validação ao sair do campo
         promptInput?.addEventListener('blur', () => {
             validateRequired(promptInput, 'Nome do técnico responsável');
         });
@@ -264,12 +258,12 @@ document.addEventListener('DOMContentLoaded', () => {
         promptCancelBtn?.addEventListener('click', () => closeModal(promptModal));
         promptCloseBtn?.addEventListener('click', () => closeModal(promptModal));
 
-        // Modal Excluir Vistoria
+        //Modal Excluir Vistoria
         confirmExcluirVistoriaConfirmBtn?.addEventListener('click', handleExcluirVistoria);
         confirmExcluirVistoriaCancelBtn?.addEventListener('click', () => closeModal(confirmExcluirVistoriaModal));
         confirmExcluirVistoriaCloseBtn?.addEventListener('click', () => closeModal(confirmExcluirVistoriaModal));
 
-        // Delegação para Botões Excluir nos Cards
+
         vistoriasListDiv?.addEventListener('click', (event) => {
             if (event.target.classList.contains('btn-excluir-vistoria')) {
                 event.preventDefault();
@@ -280,14 +274,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Fechar Modais ao Clicar Fora
         window.addEventListener('click', (event) => {
             if (event.target === promptModal) closeModal(promptModal);
             if (event.target === confirmExcluirVistoriaModal) closeModal(confirmExcluirVistoriaModal);
         });
     }
 
-    // --- Inicialização da Página ---
+
     setPageTitle();
     carregarVistorias();
     initializeEventListeners();
@@ -298,12 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-
-// --- INÍCIO: FUNÇÕES DE VALIDAÇÃO (Sem Alertas) ---
-
 function displayError(inputElement, message) {
-    // Encontra o 'irmão' .field-error-message
     const errorDiv = inputElement.parentElement.querySelector('.field-error-message');
     if (errorDiv) {
         errorDiv.textContent = message;
@@ -329,4 +317,3 @@ function validateRequired(inputElement, fieldName) {
     clearError(inputElement);
     return true;
 }
-// --- FIM: FUNÇÕES DE VALIDAÇÃO ---

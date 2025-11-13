@@ -72,10 +72,27 @@ async function createInventoryPdf(inventoryData, filialDetails, res) {
         doc.moveDown(1);
 
         // --- Linhas da Tabela ---
-        inventoryData.forEach((item, index) => {
+inventoryData.forEach((item, index) => {
             let rowY = doc.y;
 
-            if (rowY + rowHeight > 780) {
+            // 1. Preparar o texto ANTES de desenhar
+            doc.fontSize(9); // Define a fonte para o cálculo de altura
+            let itemDesc = item.descricao || 'Desconhecido';
+            if (item.numero_serial) {
+                 itemDesc += ` (Serial: ${item.numero_serial})`;
+            }
+            let itemLocal = item.local || 'N/A';
+
+            // 2. Calcular a altura que o texto ocupará (com quebra de linha)
+            const descHeight = doc.heightOfString(itemDesc, { width: descWidth });
+            const localHeight = doc.heightOfString(itemLocal, { width: 120 });
+
+            // 3. Determinar a altura da linha (o mais alto entre imagem e textos)
+            const rowPadding = 10; // 5px de padding em cima e embaixo
+            const dynamicRowHeight = Math.max(imageWidth, descHeight, localHeight) + rowPadding;
+
+            // 4. Lógica de quebra de página (usando a altura dinâmica)
+            if (rowY + dynamicRowHeight > 780) { // 780 é ~margem inferior em A4
                  doc.addPage();
                  const newHeaderY = doc.y;
                  doc.fontSize(10).font('Helvetica-Bold');
@@ -86,33 +103,31 @@ async function createInventoryPdf(inventoryData, filialDetails, res) {
                  const newHeaderBottomY = newHeaderY + doc.currentLineHeight() + 2;
                  doc.moveTo(tableLeft, newHeaderBottomY).lineTo(tableRight, newHeaderBottomY).strokeColor('#333333').lineWidth(1).stroke();
                  doc.font('Helvetica'); doc.moveDown(1);
-                 rowY = doc.y;
+                 rowY = doc.y; // Atualiza o Y após a quebra de página
             }
 
+            // 5. Definir cores de status
             let statusColorHex = '#d4edda'; let statusTextColor = '#155724'; let statusText = 'OK';
             if (item.sortStatus === 3) { statusColorHex = '#f8d7da'; statusTextColor = '#721c24'; statusText = 'Vencido'; }
             else if (item.sortStatus === 2) { statusColorHex = '#fff3cd'; statusTextColor = '#856404'; statusText = 'Vencendo.'; }
 
-            doc.rect(tableLeft, rowY, (tableRight - tableLeft) + backgroundRightPadding, rowHeight).fill(statusColorHex);
+            // 6. Desenhar o retângulo de fundo (AGORA COM ALTURA DINÂMICA)
+            doc.rect(tableLeft, rowY, (tableRight - tableLeft) + backgroundRightPadding, dynamicRowHeight).fill(statusColorHex);
 
-            const imageDrawY = rowY + (rowHeight - imageWidth) / 2;
-            const textDrawY = imageDrawY + 5;
+            // 7. Calcular posições Y para o conteúdo (centralizado ou no topo)
+            const imageDrawY = rowY + (dynamicRowHeight - imageWidth) / 2; // Centraliza imagem
+            const textDrawY = rowY + (rowPadding / 2); // Alinha texto ao topo (com padding)
 
-            // [CORRIGIDO] Lógica de Imagem para tratar CAMINHO RELATIVO
+            // 8. Lógica da Imagem (como antes)
             let imagePath = null;
             if (item.imagem && typeof item.imagem === 'string' && item.imagem.trim() !== '') {
-                // Assume que item.imagem é como 'uploads/nome.png'
                 imagePath = path.join(__dirname, '..', 'public', item.imagem);
             }
-
-            console.log(`[PDF Generator] Item: ${item.descricao}, Imagem do DB: ${item.imagem}, Caminho Construído: ${imagePath}`); // Log
-
+            console.log(`[PDF Generator] Item: ${item.descricao}, Imagem do DB: ${item.imagem}, Caminho Construído: ${imagePath}`);
             try {
                 if (imagePath && fs.existsSync(imagePath)) {
-                    console.log(`[PDF Generator] Arquivo de imagem encontrado: ${imagePath}`); // Log
                     doc.image(imagePath, imageX + 2, imageDrawY, { fit: [imageWidth, imageWidth], align: 'center', valign: 'center' });
                 } else {
-                    console.log(`[PDF Generator] Arquivo de imagem NÃO encontrado ou caminho nulo/inválido.`); // Log
                     doc.rect(imageX + 2, imageDrawY, imageWidth, imageWidth).strokeColor('#cccccc').lineWidth(0.5).stroke();
                     doc.fillColor('#aaaaaa').fontSize(8).text('Sem Img', imageX + 2, imageDrawY + imageWidth / 2 - 4, { width: imageWidth, align: 'center' });
                 }
@@ -121,20 +136,21 @@ async function createInventoryPdf(inventoryData, filialDetails, res) {
                  doc.rect(imageX + 2, imageDrawY, imageWidth, imageWidth).strokeColor('#cccccc').lineWidth(0.5).stroke();
                  doc.fillColor('#aaaaaa').fontSize(8).text('Erro Img', imageX + 2, imageDrawY + imageWidth / 2 - 4, { width: imageWidth, align: 'center' });
             }
-            doc.fillColor(statusTextColor); // Resetar cor após texto fallback
-
-            let itemDesc = item.descricao || 'Desconhecido';
-            if (item.numero_serial) {
-                 itemDesc += ` (Serial: ${item.numero_serial})`;
-            }
-            doc.fontSize(9).text(itemDesc, descX, textDrawY, { width: descWidth });
-            doc.text(item.local || 'N/A', localX, textDrawY, { width: 120 });
+            
+            // 9. Desenhar o Texto (com as larguras definidas para quebrar)
+            doc.fillColor(statusTextColor); // Define a cor do texto
+            doc.fontSize(9);
+            
+            doc.text(itemDesc, descX, textDrawY, { width: descWidth });
+            doc.text(itemLocal, localX, textDrawY, { width: 120 });
             doc.text(formatDateForClient(item.validade), validadeX, textDrawY, { width: 80 });
+            
             doc.font('Helvetica-Bold').text(statusText, statusX, textDrawY, { width: 50, align: 'right' });
             doc.font('Helvetica');
 
-            doc.fillColor('black');
-            doc.y = rowY + rowHeight + 2;
+            // 10. Avançar o cursor Y (AGORA COM ALTURA DINÂMICA)
+            doc.fillColor('black'); // Reseta a cor para o próximo item
+            doc.y = rowY + dynamicRowHeight + 2; // Adiciona 2px de margem
 
         });
 
