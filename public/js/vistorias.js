@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const promptCancelBtn = promptModal?.querySelector('.btn-cancel');
     const promptCloseBtn = promptModal?.querySelector('.modal-close-btn');
 
-    //Modal Delet Vistoria ---
+    //Modal Delet Vistoria
     const confirmExcluirVistoriaModal = document.getElementById('confirmExcluirVistoriaModal');
     const confirmExcluirVistoriaCancelBtn = document.getElementById('confirmExcluirVistoriaCancelBtn');
     const confirmExcluirVistoriaConfirmBtn = document.getElementById('confirmExcluirVistoriaConfirmBtn');
@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // Define o título da página com o nome da filial.
     async function setPageTitle() {
         try {
             const response = await fetch(`/api/filiais/${filialCnpj}`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -51,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Busca as vistorias da API.
+    //Busca as vistorias
     async function carregarVistorias() {
         if (!vistoriasListDiv) return;
         vistoriasListDiv.innerHTML = '<p>Carregando vistorias...</p>';
@@ -64,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
             vistoriasListDiv.innerHTML = `<p>${error.message}</p>`;
         }
     }
+
+
 
     function aplicarFiltro() {
         if (!filtroVistorias) return;
@@ -80,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    
+
     function renderizarVistorias(vistoriasParaRenderizar) {
         if (!vistoriasListDiv) return;
         vistoriasListDiv.innerHTML = '';
@@ -172,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    //requisição iniciar vistoria
     async function handleIniciarVistoria() {
         if (!promptInput || !promptConfirmBtn) return;
 
@@ -285,35 +287,3 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarVistorias();
     initializeEventListeners();
 });
-
-
-
-
-
-
-function displayError(inputElement, message) {
-    const errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-    if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.style.display = 'block';
-    }
-    inputElement.classList.add('invalid');
-}
-
-function clearError(inputElement) {
-    const errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-    if (errorDiv) {
-        errorDiv.textContent = '';
-        errorDiv.style.display = 'none';
-    }
-    inputElement.classList.remove('invalid');
-}
-
-function validateRequired(inputElement, fieldName) {
-    if (!inputElement || inputElement.value.trim() === '') {
-        displayError(inputElement, `${fieldName} é obrigatório.`);
-        return false;
-    }
-    clearError(inputElement);
-    return true;
-}

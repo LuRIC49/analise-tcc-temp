@@ -26,15 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailsForm = document.getElementById('detailsModalForm');
 
     const confirmFinalizarModal = document.getElementById('confirmFinalizarModal');
-    const confirmFinalizarCancelBtn = document.getElementById(
-        'confirmFinalizarCancelBtn'
-    );
-    const confirmFinalizarConfirmBtn = document.getElementById(
-        'confirmFinalizarConfirmBtn'
-    );
-    const confirmFinalizarCloseBtn = document.getElementById(
-        'confirmFinalizarCloseBtn'
-    );
+    const confirmFinalizarCancelBtn = document.getElementById('confirmFinalizarCancelBtn' );
+    const confirmFinalizarConfirmBtn = document.getElementById('confirmFinalizarConfirmBtn');
+    const confirmFinalizarCloseBtn = document.getElementById('confirmFinalizarCloseBtn' );
 
     const confirmExcluirItemModal = document.getElementById('confirmExcluirItemModal');
     const confirmExcluirItemCancelBtn = document.getElementById('confirmExcluirItemCancelBtn');
@@ -528,7 +522,6 @@ if (detailsForm) {
 
     window.addEventListener('pageshow', function (event) {
         if (event.persisted) {
-            console.log('Página carregada do cache. Recarregando dados...');
             carregarDadosVistoria();
         }
     });
@@ -553,51 +546,4 @@ function formatDateForClient(date) {
     const dateObj = parseDateAsLocal(date);
     if (!dateObj || isNaN(dateObj)) return 'Data Inválida';
     return dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-}
-
-
-// --- FUNÇÕES AUXILIARES DE VALIDAÇÃO ---
-function displayError(inputElement, message) {
-    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.className = 'field-error-message';
-        errorDiv.style.color = '#d32f2f';
-        errorDiv.style.fontSize = '0.9em';
-        errorDiv.style.marginTop = '5px';
-        inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
-    }
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-}
-
-function clearError(inputElement) {
-    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-    if (errorDiv) {
-        errorDiv.textContent = '';
-        errorDiv.style.display = 'none';
-    }
-}
-
-function validateRequired(inputElement, fieldName) {
-    if (!inputElement || inputElement.value.trim() === '') {
-        displayError(inputElement, `${fieldName} é obrigatório.`);
-        return false;
-    }
-    clearError(inputElement);
-    return true;
-}
-
-function validateDate(inputElement) {
-    if (!inputElement || inputElement.value.trim() === '') {
-        displayError(inputElement, 'Data de validade é obrigatória.');
-        return false;
-    }
-    const hoje = new Date().toISOString().split('T')[0];
-    if (inputElement.value < hoje) {
-        displayError(inputElement, 'A data não pode ser anterior a hoje.');
-        return false;
-    }
-    clearError(inputElement);
-    return true;
 }

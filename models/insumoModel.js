@@ -12,14 +12,14 @@ const { parseDateAsLocal, formatDateForClient } = require('../utils/dateFormatte
 async function checkInsumoUsage(id, connection) {
     const conn = connection || db;
     
-    // 1. Verifica na tabela MUTAVEL (inventário atual)
+    
     let query = 'SELECT codigo FROM insumo_filial_mutavel WHERE insumo_codigo = ? LIMIT 1';
     let [rows] = await conn.query(query, [id]);
     if (rows.length > 0) {
         throw new Error('Este tipo de insumo está em uso no inventário e não pode ser modificado.');
     }
 
-    // 2. Verifica na tabela IMUTAVEL (histórico)
+    
     query = 'SELECT codigo FROM insumo_filial_vistoria_imutavel WHERE insumo_codigo = ? LIMIT 1';
     [rows] = await conn.query(query, [id]);
     if (rows.length > 0) {
@@ -36,7 +36,7 @@ class Insumo {
      * Seleciona o 'is_base' para o frontend saber o que bloquear.
      */
     static async findAllTypes() {
-        // Removemos a lógica de 'empresa_cnpj'
+        
         const query = `
             SELECT codigo, descricao, imagem, is_base 
             FROM insumo 
@@ -52,7 +52,7 @@ class Insumo {
      * @returns {Promise<object|null>}
      */
     static async findById(id) {
-        // Removemos a lógica de 'empresa_cnpj'
+        
         const [rows] = await db.query('SELECT codigo, descricao, imagem, is_base FROM insumo WHERE codigo = ?', [id]);
         return rows[0];
     }
@@ -66,8 +66,8 @@ class Insumo {
     static async createType(descricao, imagemPath) {
         const descricaoPadronizada = descricao.trim().toLowerCase();
         
-        // A constraint 'UNIQUE' no DB já previne duplicatas
-        // O 'is_base = 0' é o DEFAULT 0 que definimos na tabela
+        
+        
         const query = 'INSERT INTO insumo (descricao, imagem) VALUES (?, ?)'; 
         try {
             const [result] = await db.execute(query, [descricaoPadronizada, imagemPath || null]);
@@ -93,7 +93,7 @@ class Insumo {
         try {
             await connection.beginTransaction();
 
-            // 1. Verificar se é um Tipo Base
+            
             const [rowsTipo] = await connection.query('SELECT is_base FROM insumo WHERE codigo = ? FOR UPDATE', [id]);
             if (rowsTipo.length === 0) {
                 throw new Error('Tipo de insumo não encontrado.');
@@ -102,11 +102,11 @@ class Insumo {
                 throw new Error('Não é permitido editar um tipo de insumo base.');
             }
 
-            // 2. [NOVO] Verificar se está em uso
-            // Esta função vai lançar um erro se o item estiver em uso.
+            
+            
             await checkInsumoUsage(id, connection);
 
-            // 3. Se passou nas verificações, atualiza
+            
             const descricaoPadronizada = descricao.trim().toLowerCase();
             let query;
             let params;
@@ -128,7 +128,7 @@ class Insumo {
             if (error.code === 'ER_DUP_ENTRY') {
                 throw new Error('A descrição fornecida já está em uso por outro tipo.');
             }
-            throw error; // Propaga o erro (ex: "em uso" ou "base")
+            throw error; 
         } finally {
             connection.release();
         }
@@ -142,7 +142,7 @@ class Insumo {
      * @returns {Promise<number>} Número de linhas afetadas.
      */
     static async deleteType(id) {
-        // 1. Verificar se é um Tipo Base
+        
         const [rowsTipo] = await db.query('SELECT is_base FROM insumo WHERE codigo = ?', [id]);
         if (rowsTipo.length === 0) {
             throw new Error('Tipo de insumo não encontrado.');
@@ -151,8 +151,8 @@ class Insumo {
             throw new Error('Não é permitido excluir um tipo de insumo base.');
         }
 
-        // 2. Se não for base, tenta excluir.
-        // O DB vai lançar 'ER_ROW_IS_REFERENCED_2' se estiver em uso.
+        
+        
         const [result] = await db.execute('DELETE FROM insumo WHERE codigo = ?', [id]);
         return result.affectedRows;
     }
@@ -167,13 +167,13 @@ class Insumo {
         const conn = connection || db;
         const descricaoPadronizada = descricao.trim().toLowerCase();
 
-        // 1. Tenta encontrar o tipo
+        
         let [rows] = await conn.query('SELECT codigo FROM insumo WHERE descricao = ?', [descricaoPadronizada]);
         if (rows.length > 0) {
             return rows[0].codigo;
         }
         
-        // 2. Se não existe, CRIA um novo tipo (como 'is_base = 0' por padrão)
+        
         const [result] = await conn.execute('INSERT INTO insumo (descricao) VALUES (?)', [descricaoPadronizada]);
         return result.insertId;
     }
@@ -185,10 +185,10 @@ class Insumo {
 
 
 
-// Classe para interagir com as tabelas de inventário da filial (mutável e imutável)
+
 class InsumoFilial {
 
-    // Adiciona ou ATUALIZA um insumo diretamente no inventário (sem vistoria), operando APENAS na tabela MUTÁVEL.
+    
     static async createDirect(data) {
         const { filial_cnpj, tipo_descricao, validade, local, descricao_item, numero_serial } = data;
         if (!filial_cnpj || !tipo_descricao || !local) {
@@ -221,7 +221,7 @@ class InsumoFilial {
         } finally { connection.release(); }
     }
 
-    // Insere um registro na tabela de histórico imutável.
+    
     static async createImutavelRecord(insumoData, vistoriaCodigoOverride = null, connection) {
         const conn = connection || db;
         const numeroSerial = insumoData.numero_serial || null;
@@ -237,9 +237,9 @@ class InsumoFilial {
         console.log(`Registro Histórico criado: insumo=${insumoCodigo}, filial=${filialCnpj}, vistoria=${vistoriaCodigoParaSalvar}, serial=${numeroSerial}`);
     }
 
-    // Busca todos os insumos do inventário ATUAL (mutável) de uma filial, incluindo status de validade e imagem BLOB.
+    
     static async findByFilial(filialCnpj) {
-        // [CORRIGIDO] Seleciona i.imagem (o BLOB)
+        
         const query = `
             SELECT inf.codigo, inf.validade, inf.local, inf.descricao AS descricao_item,
                    i.descricao AS tipo_descricao, i.imagem, inf.numero_serial
@@ -263,15 +263,15 @@ class InsumoFilial {
             }
             return {
                 ...row,
-                descricao: row.tipo_descricao, // Renomeia para consistência
-                imagem: row.imagem, // [CORRIGIDO] Passa o BLOB como 'imagem'
+                descricao: row.tipo_descricao, 
+                imagem: row.imagem, 
                 status: status,
                 validade_formatada: formatDateForClient(row.validade)
             };
         });
     }
 
-    // Busca todos os números de seriais distintos para uma filial na tabela mutável.
+    
     static async findSeriaisByFilial(filialCnpj) {
         const query = ` SELECT DISTINCT numero_serial FROM insumo_filial_mutavel WHERE filial_cnpj = ? AND numero_serial IS NOT NULL ORDER BY numero_serial ASC; `;
         const [rows] = await db.query(query, [filialCnpj]);
@@ -297,16 +297,16 @@ class InsumoFilial {
         return rows.map(row => row.numero_serial);
     }
 
-    // Busca todos os locais (distintos) usados por uma filial na tabela mutável.
+    
     static async findLocationsByFilial(filialCnpj) { 
         const query = ` SELECT DISTINCT local FROM insumo_filial_mutavel WHERE filial_cnpj = ? AND local IS NOT NULL AND local <> '' ORDER BY local ASC; `;
         const [rows] = await db.query(query, [filialCnpj]);
         return rows.map(row => row.local);
     }
 
-    // Busca um único insumo do inventário ATUAL (mutável) pelo seu ID, verificando a propriedade.
+    
     static async findById(id, empresaCnpj) {
-        // [CORRIGIDO] Seleciona i.imagem (o BLOB)
+        
         const query = `
             SELECT inf.*, i.descricao as tipo_insumo, i.imagem
             FROM insumo_filial_mutavel AS inf
@@ -319,14 +319,14 @@ class InsumoFilial {
         const row = rows[0];
         return {
             ...row,
-            imagem: row.imagem, // [CORRIGIDO] Passa o BLOB
+            imagem: row.imagem, 
             validade_formatada: formatDateForClient(row.validade)
         };
     }
 
-    // Busca todos os registros históricos (imutável) associados a uma vistoria específica.
+    
     static async findByVistoria(vistoriaId) {
-        // [CORRIGIDO] Seleciona i.imagem (o BLOB)
+        
         const query = `
             SELECT im.*, i.descricao AS tipo_insumo, i.imagem, mut.codigo AS codigo_atual
             FROM insumo_filial_vistoria_imutavel AS im
@@ -342,12 +342,12 @@ class InsumoFilial {
         return rows.map(row => ({
             ...row,
             descricao: row.tipo_insumo,
-            imagem: row.imagem, // [CORRIGIDO] Passa o BLOB
+            imagem: row.imagem, 
             validade_formatada: formatDateForClient(row.validade)
         }));
     }
 
-    // Adiciona ou Atualiza um insumo via Vistoria, logando o estado da vistoria no histórico (imutável) e atualizando/inserindo no estado atual (mutável).
+    
     static async create(data) {
         const { filial_cnpj, vistoria_codigo, tipo_descricao, validade, local, descricao_item, numero_serial } = data;
         const connection = await db.getConnection();
@@ -376,20 +376,20 @@ class InsumoFilial {
         finally { connection.release(); }
     }
 
-    // Atualiza um insumo via Edição Manual, logando o estado *anterior* no histórico (imutável) com vistoria NULL.
+    
   static async update(id, newData, empresaCnpj) {
-        // A verificação de propriedade/existência agora é feita no controller antes de chamar
+        
         const { validade, local, descricao, numero_serial } = newData;
-        const connection = await db.getConnection(); // Ainda usamos conexão para consistência futura
+        const connection = await db.getConnection(); 
         try {
-            await connection.beginTransaction(); // Mantém transação para update único
+            await connection.beginTransaction(); 
 
             const queryUpdate = `
                 UPDATE insumo_filial_mutavel
                 SET validade = ?, local = ?, descricao = ?, numero_serial = ?
                 WHERE codigo = ?;
             `;
-            // Nota: numero_serial não é editável no front, mas mantemos na query caso seja usado via API
+            
             const [updateResult] = await connection.execute(queryUpdate, [
                 validade || null,
                 local,
@@ -398,9 +398,9 @@ class InsumoFilial {
                 id
             ]);
 
-            // Verifica se algo foi realmente atualizado (redundante se controller já verificou)
+            
             if (updateResult.affectedRows === 0) {
-                 // Lança erro se o ID não existia (embora controller deva pegar isso)
+                 
                  throw new Error('Insumo não encontrado para atualização (ID: ' + id + ')');
             }
 
@@ -411,14 +411,14 @@ class InsumoFilial {
         } catch (error) {
             await connection.rollback();
             console.error("Erro em update:", error);
-            // Propaga o erro para o controller tratar (ex: 404 se ID não existir)
+            
             throw error;
         } finally {
             connection.release();
         }
     }
 
-    // Busca o histórico (imutável) de um insumo específico, filtrando por serial.
+    
     static async findHistoryById(idMutavel, empresaCnpj) {
         const connection = await db.getConnection();
         try {
@@ -426,7 +426,7 @@ class InsumoFilial {
             const [rowsMutavel] = await connection.query(queryBuscaMutavel, [idMutavel, empresaCnpj]);
             if (rowsMutavel.length === 0) { return null; }
             const { insumo_codigo, filial_cnpj, numero_serial } = rowsMutavel[0];
-            // [CORRIGIDO] Seleciona i.imagem (o BLOB)
+            
             const queryBuscaImutavel = `
                 SELECT im.codigo AS historia_id, im.vistoria_codigo, im.validade, im.local,
                        im.descricao, im.numero_serial, i.descricao AS tipo_insumo, i.imagem
@@ -438,21 +438,21 @@ class InsumoFilial {
             const [rowsImutavel] = await connection.query(queryBuscaImutavel, [insumo_codigo, filial_cnpj, numero_serial]);
             return rowsImutavel.map(row => ({
                 ...row,
-                imagem: row.imagem, // [CORRIGIDO] Passa o BLOB
+                imagem: row.imagem, 
                 validade_formatada: formatDateForClient(row.validade)
             }));
         } catch (error) { console.error("Erro no Model ao buscar histórico:", error); throw error; }
         finally { connection.release(); }
     }
 
-    // Remove um registro da tabela mutável (inventário atual). O histórico é preservado.
+    
     static async remove(id) {
         const [result] = await db.execute('DELETE FROM insumo_filial_mutavel WHERE codigo = ?', [id]);
         console.log(`Removido (Manual): mutavel.codigo=${id}`);
         return result.affectedRows;
     }
 
-    // Remove um registro específico da tabela imutável (histórico), apenas se a vistoria associada estiver aberta.
+    
     static async removeImutavelRecord(historia_id, empresaCnpj) {
         const connection = await db.getConnection();
         try {

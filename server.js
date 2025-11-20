@@ -55,20 +55,17 @@ async function initializeDatabase() {
 await connection.execute(`
             CREATE TABLE IF NOT EXISTS insumo (
                 codigo INT AUTO_INCREMENT PRIMARY KEY,
-                descricao VARCHAR(200) NOT NULL UNIQUE, -- Descrição deve ser única
+                descricao VARCHAR(200) NOT NULL UNIQUE,
                 imagem VARCHAR(255) NULL,
                 
-                -- INÍCIO DA ADIÇÃO (TIPOS BASE) --
+                -- O (TIPOS BASE) --
                 -- 1 = Base (Não pode ser editado/excluído)
                 -- 0 = Criado por usuário (Pode ser editado/excluído se não estiver em uso)
                 is_base TINYINT(1) NOT NULL DEFAULT 0
-                -- FIM DA ADIÇÃO --
             )
         `);
         console.log('✔ Tabela `insumo` verificada/criada.');
         try {
-            // Criei caminhos de imagem "default" como exemplo.
-            // Se você não tiver essas imagens, não há problema (ficará null).
             await connection.execute(
                 `INSERT IGNORE INTO insumo (descricao, imagem, is_base) VALUES 
                  ('Extintor CO2 6KG', 'uploads/EXTINTOR CO2 6KG.png', 1),
@@ -93,8 +90,6 @@ await connection.execute(`
         `);
         console.log('✔ Tabela `vistoria` verificada/criada.');
 
-
-        //Coloquei                 FOREIGN KEY (vistoria_codigo) REFERENCES vistoria(codigo) ON DELETE CASCADE , para caso excluir uma vistoria também excluir todos os insumos cadastrados nesta vistoria.
         await connection.execute(`
             CREATE TABLE IF NOT EXISTS  insumo_filial_vistoria_imutavel(
                 codigo INT AUTO_INCREMENT PRIMARY KEY,

@@ -1,4 +1,8 @@
+// public/js/utils/validation.js
 
+/**
+ * Exibe uma mensagem de erro abaixo de um campo de formulário.
+ */
 function displayError(inputElement, message) {
     if (!inputElement) return;
     let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
@@ -77,6 +81,20 @@ function validateEmail(inputElement) {
  * Valida o tamanho mínimo da senha.
  * @returns {boolean} True se for válida.
  */
+function validateSenha(inputElement) {
+    if (inputElement.value.length < 8) {
+        displayError(inputElement, 'A senha deve ter no mínimo 8 caracteres.');
+        return false;
+    }
+    clearError(inputElement);
+    return true;
+}
+
+
+/**
+ * Valida o tamanho mínimo da senha.
+ * @returns {boolean} True se for válida.
+ */
 function validatePasswordLength(inputElement) {
     if (inputElement.value.length < 8) {
         displayError(inputElement, 'A senha deve ter no mínimo 8 caracteres.');
@@ -84,4 +102,37 @@ function validatePasswordLength(inputElement) {
     }
     clearError(inputElement);
     return true;
+}
+
+
+/**
+ * Converte uma string de data (AAAA-MM-DD) ou timestamp para um objeto Date local.
+ * @param {string|Date} dateInput - A data do banco (pode vir com 'T').
+ * @returns {Date|null}
+ */
+function parseDateAsLocal(dateInput) {
+    if (!dateInput) return null;
+    if (dateInput instanceof Date) return dateInput;
+    if (typeof dateInput === 'string') {
+        const dateString = dateInput.split('T')[0]; // Pega apenas AAAA-MM-DD
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            console.error('Formato de data inválido recebido:', dateInput);
+            return null;
+        }
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day); // Mês é 0-indexado
+    }
+    return null;
+}
+
+/**
+ * Formata um objeto Date ou string de data para o padrão 'DD/MM/AAAA'.
+ * @param {Date|string} date - O objeto de data ou a string do banco.
+ * @returns {string} A data formatada ou 'N/A'.
+ */
+function formatDateForClient(date) {
+    if (!date) return 'N/A';
+    const dateObj = parseDateAsLocal(date);
+    if (!dateObj || isNaN(dateObj)) return 'Data Inválida';
+    return dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }

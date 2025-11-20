@@ -1,78 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
+
     const loginForm = document.getElementById('loginForm');
     const cpfCnpjInput = document.getElementById('cpfcnpj');
     const senhaLoginInput = document.getElementById('senhalogin');
     const loginButton = document.querySelector('.login-button');
     const togglePassword = document.getElementById('togglePassword');
 
-    let notificationDiv = null;
-
-
-function showNotification(message, type) {
-        if (notificationDiv) {
-            notificationDiv.remove();
-        }
-
-        notificationDiv = document.createElement('div');
-        // Usamos as classes para estilização (cor), como você já faz
-        notificationDiv.classList.add('notification-message', type); 
-        notificationDiv.textContent = message;
-
-        // Adicionamos estilos inline para garantir o posicionamento
-        notificationDiv.style.position = 'fixed'; // Posição fixa na tela
-        notificationDiv.style.left = '50%';
-        notificationDiv.style.top = '50%';
-        notificationDiv.style.transform = 'translate(-50%, -50%)';
-        notificationDiv.style.padding = '20px';
-        notificationDiv.style.borderRadius = '5px';
-        notificationDiv.style.zIndex = '2000'; // Garante que fique na frente
-        notificationDiv.style.display = 'block';
-
-        // Estilos específicos de tipo (pode ser redundante se o CSS já fizer)
-        if (type === 'success') {
-            notificationDiv.style.backgroundColor = '#d4edda';
-            notificationDiv.style.color = '#155724';
-        } else if (type === 'error') {
-            notificationDiv.style.backgroundColor = '#f8d7da';
-            notificationDiv.style.color = '#721c24';
-        }
-
-        document.body.appendChild(notificationDiv);
-
-        setTimeout(() => {
-            if (notificationDiv) {
-                notificationDiv.remove();
-                notificationDiv = null;
-            }
-        }, 3000);
-    }
-
-    function displayError(inputElement, message) {
-        const errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-        if (errorDiv) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-    }
-
-    function clearError(inputElement) {
-        const errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-        if (errorDiv) {
-            errorDiv.textContent = '';
-            errorDiv.style.display = 'none';
-        }
-    }
-
-    function validateRequired(inputElement, fieldName) {
-        if (inputElement.value.trim() === '') {
-            displayError(inputElement, `${fieldName} é obrigatório.`);
-            return false;
-        }
-        clearError(inputElement);
-        return true;
-    }
+    /**
+     * @param {HTMLElement} inputElement
+     * @returns {boolean}
+     */
     
-
+     //Valida senha mínimo de 8 caracteres.
     function validateLoginSenha(inputElement) {
         if (inputElement.value.length < 8) {
             displayError(inputElement, 'A senha deve ter no mínimo 8 caracteres.');
@@ -82,6 +21,7 @@ function showNotification(message, type) {
         return true;
     }
 
+    //formata o cnpj 14 digits
     cpfCnpjInput.addEventListener('input', function(event) {
         let value = event.target.value.replace(/\D/g, '');
         if (value.length > 14) {
@@ -117,7 +57,7 @@ function showNotification(message, type) {
         }
 
         if (!isValid) {
-            showNotification('Por favor, corrija os erros para continuar.', 'error');
+            Notifier.showError('Por favor, corrija os erros para continuar.');
             return;
         }
 
@@ -137,7 +77,7 @@ function showNotification(message, type) {
             const data = await response.json();
 
             if (response.ok) {
-                showNotification(data.message || 'Login realizado com sucesso!', 'success');
+                Notifier.showSuccess(data.message || 'Login realizado com sucesso!');
                 localStorage.setItem('authToken', data.token);
                 setTimeout(() => {
                     window.location.href = 'index.html';
@@ -146,14 +86,14 @@ function showNotification(message, type) {
                 throw new Error(data.message || 'Credenciais inválidas.');
             }
         } catch (error) {
-            showNotification(error.message, 'error');
+            Notifier.showError(error.message);
         } finally {
             loginButton.disabled = false;
             loginButton.textContent = 'Logar';
         }
     });
 
-
+    //valida o cnpj quando sai do campo
     cpfCnpjInput.addEventListener('blur', function() {
         if (cpfCnpjInput.value.trim() !== '') {
             const cleanValue = cpfCnpjInput.value.replace(/\D/g, '');

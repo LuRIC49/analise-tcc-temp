@@ -1,53 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    //fUNÇÕES DE VALIDAÇÃO E ERRO
-    function displayError(inputElement, message) {
-        let errorDiv = inputElement.nextElementSibling;
-        if (!errorDiv || !errorDiv.classList.contains('field-error-message')) {
-            errorDiv = document.createElement('div');
-            errorDiv.className = 'field-error-message';
-            errorDiv.style.color = '#d32f2f';
-            errorDiv.style.fontSize = '0.9em';
-            errorDiv.style.marginTop = '5px';
-            inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
-        }
-        errorDiv.textContent = message;
-        errorDiv.style.display = 'block';
-    }
 
-    function clearError(inputElement) {
-        let errorDiv = inputElement.nextElementSibling;
-        if (errorDiv && errorDiv.classList.contains('field-error-message')) {
-            errorDiv.style.display = 'none';
-            errorDiv.textContent = '';
-        }
-    }
-
-    function validateEmail(inputElement) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(inputElement.value.trim())) {
-            displayError(inputElement, 'Formato de e-mail inválido.');
-            return false;
-        }
-        clearError(inputElement);
-        return true;
-    }
-
-
-
-    function validatePasswordLength(inputElement) {
-        if (inputElement.value.length < 8) {
-            displayError(inputElement, 'A senha deve ter no mínimo 8 caracteres.');
-            return false;
-        }
-        clearError(inputElement);
-        return true;
-    }
-
-
-    //busca e exibe os dados dos perfis
     const token = localStorage.getItem('authToken');
     if (!token) {
-        alert('Sessão não encontrada. Por favor, faça o login novamente.');
+        Notifier.showError('Sessão não encontrada. Por favor, faça o login novamente.');
         window.location.href = 'login.html';
         return;
     }
@@ -67,14 +22,13 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .catch(error => {
         console.error("Erro ao carregar dados do perfil:", error);
-        alert('Não foi possível carregar os dados do perfil. ' + error.message);
+        Notifier.showError('Não foi possível carregar os dados do perfil. ' + error.message);
         localStorage.removeItem('userRole');
         localStorage.removeItem('authToken');
         window.location.href = 'login.html';
     });
 
 
-    //Modais
     const modal = document.getElementById('editProfileModal');
     const modalTitle = document.getElementById('modalTitle');
     const formInputsContainer = document.getElementById('formInputsContainer');
@@ -82,27 +36,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeModalBtn = document.querySelector('.modal-close-btn');
     const cancelBtn = document.querySelector('.btn-cancel');
 
+    /**
+     * @param {string} mode ('email' or 'password').
+     */
     function openModal(mode) {
         formInputsContainer.innerHTML = '';
         let title = '', inputsHTML = '';
 
         if (mode === 'email') {
             title = 'Alterar E-mail';
-            inputsHTML = `<div class="form-group"><label for="newEmail">Novo E-mail:</label><input type="email" id="newEmail" name="email" required></div>`;
+            inputsHTML = `<div class="form-group"><label for="newEmail">Novo E-mail:</label><input type="email" id="newEmail" name="email"</div>`;
         } else if (mode === 'password') {
             title = 'Alterar Senha';
             inputsHTML = `
                 <div class="form-group">
                     <label for="currentPassword">Senha Atual:</label>
-                    <input type="password" id="currentPassword" name="senhaAtual" required>
+                    <input type="password" id="currentPassword" name="senhaAtual">
                 </div>
                 <div class="form-group">
                     <label for="newPassword">Nova Senha (mínimo 8 caracteres):</label>
-                    <input type="password" id="newPassword" name="novaSenha" required>
+                    <input type="password" id="newPassword" name="novaSenha">
                 </div>
                 <div class="form-group">
                     <label for="confirmNewPassword">Confirmar Nova Senha:</label>
-                    <input type="password" id="confirmNewPassword" name="confirmarNovaSenha" required>
+                    <input type="password" id="confirmNewPassword" name="confirmarNovaSenha">
                 </div>
             `;
         }
@@ -113,9 +70,10 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.display = 'flex';
     }
 
+
     function closeModal() {
         const inputs = modalForm.querySelectorAll('input');
-        inputs.forEach(input => clearError(input));
+        inputs.forEach(input => clearError(input)); 
         modal.style.display = 'none';
         modalForm.reset();
     }
@@ -127,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
     cancelBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => { if (event.target === modal) closeModal(); });
 
-    //Formulário modal
     modalForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         
@@ -169,18 +126,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
             
-            alert(result.message || "Operação realizada com sucesso!");
+            Notifier.showSuccess(result.message || "Operação realizada com sucesso!");
             
-            if (requiresLogout) {
-                localStorage.removeItem('userRole');
-                localStorage.removeItem('authToken');
-                window.location.href = 'login.html';
-            } else {
-                window.location.reload();
-            }
+            setTimeout(() => {
+                if (requiresLogout) {
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('authToken');
+                    window.location.href = 'login.html';
+                } else {
+                    window.location.reload();
+                }
+            }, 1500);
+
         } catch (error) {
-            alert(`Erro: ${error.message}`);
-        } finally {
+            Notifier.showError(`Erro: ${error.message}`);
             saveButton.disabled = false;
             saveButton.textContent = 'Salvar';
         }

@@ -11,29 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const formNovaFilial = document.getElementById('formNovaFilial');
     const filialCnpjInput = document.getElementById('filialCnpj');
 
-
-
-    function displayError(inputElement, message) {
-
-        let errorDiv = inputElement.nextElementSibling;
-        if (!errorDiv || !errorDiv.classList.contains('error-message')) {
-            errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.style.color = '#d32f2f';
-            errorDiv.style.fontSize = '0.9em';
-            errorDiv.style.marginTop = '5px';
-            inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
-        }
-        errorDiv.textContent = message;
-    }
-
-    function clearError(inputElement) {
-        let errorDiv = inputElement.nextElementSibling;
-        if (errorDiv && errorDiv.classList.contains('error-message')) {
-            errorDiv.textContent = '';
-        }
-    }
-
     function validateCnpj(inputElement) {
         const cnpjValue = inputElement.value.trim().replace(/\D/g, '');
         if (cnpjValue.length !== 14) {

@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return; 
     }
 
-    // --- ELEMENTOS DO DOM ---
     const filialNameInfo = document.getElementById('filial-name-info');
     const filialCnpjInfo = document.getElementById('filial-cnpj-info');
     const filialAddressInfo = document.getElementById('filial-address-info');
@@ -23,26 +22,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAdicionarInsumoDireto = document.getElementById('btnAdicionarInsumoDireto');
 
     const btnGerarRelatorio = document.getElementById('btnGerarRelatorio');
-    // Elementos dos Modais
+    
     const selectionModal = document.getElementById('selectionModal');
     const detailsModal = document.getElementById('detailsModal');
     const detailsForm = document.getElementById('detailsModalForm');
     const selectionGrid = selectionModal ? selectionModal.querySelector('.selection-grid') : null;
     const detailsFormContainer = detailsModal ? detailsModal.querySelector('#formInputsContainer') : null;
     const serialSearchInput = document.getElementById('serialSearchInput');
-    const statusFilter = document.getElementById('statusFilter'); // Voltamos para statusFilter
+    const statusFilter = document.getElementById('statusFilter'); 
     const serialSearchList = document.getElementById('serialSearchList');
     let todosOsInsumos = [];
     
-    // --- NAVEGAÇÃO ---
+    
     if (btnVerVistorias) {
         btnVerVistorias.addEventListener('click', (event) => {
             event.preventDefault();
             window.location.href = `vistorias.html?cnpj=${filialCnpj}`;
         });
     }
-
-
 
 
 
@@ -57,12 +54,12 @@ if (btnGerarRelatorio) {
             btnGerarRelatorio.disabled = true;
             btnGerarRelatorio.textContent = 'Gerando...';
 
-            // --- INÍCIO DA MODIFICAÇÃO ---
-            // 1. Pega os valores atuais dos filtros
+            
+            
             const status = statusFilter.value;
             const serial = serialSearchInput.value;
 
-            // 2. Constrói a query string
+            
             const params = new URLSearchParams();
             if (status && status !== 'todos') {
                 params.append('status', status);
@@ -72,22 +69,22 @@ if (btnGerarRelatorio) {
             }
             const queryString = params.toString();
             
-            // 3. Adiciona a query string à URL do fetch
+            
             const fetchUrl = `/api/filiais/${filialCnpj}/report?${queryString}`;
-            // --- FIM DA MODIFICAÇÃO ---
+            
 
             try {
-                const response = await fetch(fetchUrl, { // <-- Usa a nova URL
+                const response = await fetch(fetchUrl, { 
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (!response.ok) {
-                    // Tenta ler a mensagem de erro do backend se for JSON
+                    
                     let errorMsg = `Erro ${response.status}: ${response.statusText}`;
                     try {
                          const errorResult = await response.json();
                          errorMsg = errorResult.message || errorMsg;
-                    } catch(e) { /* Ignora se não for JSON */ }
+                    } catch(e) { }
                     throw new Error(errorMsg);
                 }
 
@@ -104,7 +101,7 @@ if (btnGerarRelatorio) {
 
             } catch (error) {
                 console.error('Erro ao gerar ou baixar relatório:', error);
-                Notifier.showError(`Não foi possível gerar o relatório: ${error.message}`); // <-- Usei o Notifier
+                Notifier.showError(`Não foi possível gerar o relatório: ${error.message}`); 
             } finally {
                 btnGerarRelatorio.disabled = false;
                 btnGerarRelatorio.textContent = originalButtonText;
@@ -125,20 +122,20 @@ async function carregarDetalhesFilial() {
             
             document.title = `Inventário: ${filial.nome}`;
 
-            // --- INÍCIO DA CORREÇÃO ---
-            // Adicionamos os atributos 'title' para o tooltip
+            
+            
             filialNameInfo.innerHTML = `<strong>EMPRESA:</strong> ${filial.nome}`;
-            filialNameInfo.title = filial.nome; // Tooltip
+            filialNameInfo.title = filial.nome; 
 
             filialCnpjInfo.innerHTML = `<strong>CNPJ:</strong> ${filial.cnpj}`;
-            // CNPJ não precisa de tooltip, pois já é formatado
+            
 
             filialAddressInfo.innerHTML = `<strong>ENDEREÇO:</strong> ${filial.endereco}`;
-            filialAddressInfo.title = filial.endereco; // Tooltip
+            filialAddressInfo.title = filial.endereco; 
 
             filialEmailInfo.innerHTML = `<strong>EMAIL:</strong> ${filial.email_responsavel}`;
-            filialEmailInfo.title = filial.email_responsavel; // Tooltip
-            // --- FIM DA CORREÇÃO ---
+            filialEmailInfo.title = filial.email_responsavel; 
+            
 
         } catch (error) {
             document.querySelector('main').innerHTML = `<h1>${error.message}</h1>`;
@@ -155,20 +152,20 @@ async function carregarInsumosGerais() {
             const response = await fetch(`/api/insumos/filial/${filialCnpj}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Falha ao carregar os insumos.');
 
-            todosOsInsumos = await response.json(); // Salva na variável global
+            todosOsInsumos = await response.json(); 
             
-            // --- INÍCIO DA LÓGICA DE POPULAR FILTROS ---
+            
             
             const seriais = new Set();
-            // Removemos 'locais' e 'tipos'
+            
 
             todosOsInsumos.forEach(item => {
                 if (item.numero_serial) seriais.add(item.numero_serial);
             });
 
-            // 1. Popula o Datalist (sugestões) de Seriais
+            
             if (serialSearchList) {
-                serialSearchList.innerHTML = ''; // Limpa sugestões antigas
+                serialSearchList.innerHTML = ''; 
                 seriais.forEach(s => {
                     const option = document.createElement('option');
                     option.value = s;
@@ -176,15 +173,15 @@ async function carregarInsumosGerais() {
                 });
             }
 
-            // 2. A lógica de popular o Select de Status foi removida (é estático).
             
-            // --- FIM DA LÓGICA DE POPULAR FILTROS ---
+            
+            
 
-            // Chama aplicarFiltros() para renderizar a lista inicial (já ordenada)
+            
             aplicarFiltros(); 
 
         } catch (error) {
-            todosOsInsumos = []; // Limpa em caso de erro
+            todosOsInsumos = []; 
             insumosGridDiv.innerHTML = `<p>${error.message}</p>`;
         }
     }
@@ -200,15 +197,15 @@ async function carregarInsumosGerais() {
             card.classList.add(item.status);
             }
             
-            // --- ALTERAÇÃO INICIA AQUI ---
-            // Lógica condicional removida. O N° Serial agora é exibido para todos os itens.
+            
+            
             let serialHtml = '';
                     if (item.numero_serial) {
             serialHtml = `<p><strong>Nº Serial:</strong> ${item.numero_serial}</p>`;
                     } else {
             serialHtml = `<p><strong>Nº Serial:</strong> N/A</p>`;
                     }
-            // --- ALTERAÇÃO TERMINA AQUI ---
+            
             
             card.innerHTML = `
             <img src="${item.imagem || 'images/logotipo.png'}" alt="${item.descricao}">
@@ -225,7 +222,7 @@ async function carregarInsumosGerais() {
 
             function renderizarInsumos(listaInsumos) {
         if (!insumosGridDiv) return;
-        insumosGridDiv.innerHTML = ''; // Limpa o grid
+        insumosGridDiv.innerHTML = ''; 
 
         if (listaInsumos.length === 0) {
             insumosGridDiv.innerHTML = '<p>Nenhum insumo encontrado para este filtro.</p>';
@@ -243,16 +240,16 @@ async function carregarInsumosGerais() {
      */
 function aplicarFiltros() {
         const termoBusca = serialSearchInput.value.toLowerCase();
-        const status = statusFilter.value; // Voltamos para statusFilter
+        const status = statusFilter.value; 
 
         let insumosFiltrados = todosOsInsumos;
 
-        // 1. Filtra por Status (Select)
+        
         if (status !== 'todos') {
             insumosFiltrados = insumosFiltrados.filter(item => item.status === status);
         }
 
-        // 2. Filtra por Serial (Input: Apenas N° Serial)
+        
         if (termoBusca) {
             insumosFiltrados = insumosFiltrados.filter(item => {
                 const serial = item.numero_serial || '';
@@ -260,21 +257,21 @@ function aplicarFiltros() {
             });
         }
 
-        // 3. Ordena pela data de validade (MAIS PRÓXIMA PRIMEIRO - ASC)
-        // Esta ordenação é aplicada a todos os resultados, como solicitado.
+        
+        
         insumosFiltrados.sort((a, b) => {
-            // Usa a função parseDateAsLocal que já existe no seu arquivo
+            
             const dateA = parseDateAsLocal(a.validade);
             const dateB = parseDateAsLocal(b.validade);
 
-            // Itens sem data de validade (null) vão para o final
-            if (dateA && dateB) return dateA - dateB; // Ordena da data mais antiga para a mais nova
-            if (dateA) return -1; // dateA tem data, dateB não (A vem primeiro)
-            if (dateB) return 1;  // dateB tem data, dateA não (B vem primeiro)
-            return 0; // Ambos são null
+            
+            if (dateA && dateB) return dateA - dateB; 
+            if (dateA) return -1; 
+            if (dateB) return 1;  
+            return 0; 
         });
 
-        // 4. Renderiza o resultado final
+        
         renderizarInsumos(insumosFiltrados);
     }
 
@@ -288,17 +285,17 @@ function aplicarFiltros() {
          if (detailsForm) detailsForm.reset(); 
          const serialDatalist = document.getElementById('serial-list-direto');
          if (serialDatalist) serialDatalist.innerHTML = '';
-         const locationDatalist = document.getElementById('location-list-direto'); // Limpa locais
-         if (locationDatalist) locationDatalist.innerHTML = ''; // Limpa locais
+         const locationDatalist = document.getElementById('location-list-direto'); 
+         if (locationDatalist) locationDatalist.innerHTML = ''; 
      }
-// --- INÍCIO DA ADIÇÃO: LISTENERS DOS FILTROS (VERSÃO RESTAURADA) ---
+
     if (serialSearchInput) {
         serialSearchInput.addEventListener('input', aplicarFiltros); 
     }
     if (statusFilter) {
         statusFilter.addEventListener('change', aplicarFiltros);
     }
-    // --- FIM DA ADIÇÃO ---
+    
 
     
     document.querySelectorAll('#selectionModal .modal-close-btn, #selectionModal .btn-cancel, #detailsModal .modal-close-btn, #detailsModal .btn-cancel')
@@ -314,7 +311,7 @@ function aplicarFiltros() {
             if (!response.ok) throw new Error('Falha ao buscar tipos de insumo.');
             const tiposDeInsumo = await response.json();
             
-            selectionGrid.innerHTML = ''; // Limpa o grid
+            selectionGrid.innerHTML = ''; 
             tiposDeInsumo.forEach(tipo => {
                 const card = document.createElement('div');
                 card.className = 'insumo-card-select';
@@ -350,18 +347,18 @@ async function fetchLocations(cnpj) {
                  console.error("Elementos do modal de detalhes não encontrados.");
                  return;
                 }
-                closeModal(); // Fecha outros modais se abertos
+                closeModal(); 
                 detailsModal.querySelector('#detailsModalTitle').textContent = `Detalhes para: ${descricaoInsumo}`;
 
                 const hoje = new Date().toISOString().split('T')[0];
 
-                // --- BUSCA DADOS PARA AUTOCOMPLETE ---
+                
                 let seriais = [];
                 let locais = [];
 
                 if (filialCnpj) {
                     try {
-                        // 1. Busca seriais filtrados pelo tipo (descricaoInsumo)
+                        
                         const response = await fetch(
                             `/api/insumos/filial/${filialCnpj}/seriais-por-tipo?tipo=${encodeURIComponent(descricaoInsumo)}`, 
                             { headers: { 'Authorization': `Bearer ${token}` } }
@@ -371,28 +368,28 @@ async function fetchLocations(cnpj) {
                         console.warn("Não foi possível carregar seriais por tipo:", error); 
                     }
                     
-                    // 2. Busca locais (lógica original mantida)
+                    
                     locais = await fetchLocations(filialCnpj);
                 }
 
 
-                // --- MONTAGEM DO HTML ---
+                
                 let serialInputHtml = '';
                 const serialDatalistId = 'serial-list-direto';
                 let serialDatalistHtml = `<datalist id="${serialDatalistId}">`;
                 seriais.forEach(s => { serialDatalistHtml += `<option value="${s}"></option>`; });
                 serialDatalistHtml += '</datalist>';
 
-                // --- ALTERAÇÃO INICIA AQUI ---
-                        // A condição "if includes('extintor')" foi REMOVIDA.
-                        // O campo N° Serial agora é padrão para todos os insumos.
+                
+                        
+                        
                 serialInputHtml = `
                 <div class="form-group">
                 <label for="numero_serial">Nº Serial (Obrigatório):</label> 
                 <input type="text" id="numero_serial" name="numero_serial" list="${serialDatalistId}" autocomplete="off"> 
                 </div>
                 `;
-                // --- ALTERAÇÃO TERMINA AQUI ---
+                
 
                 const locationDatalistId = 'location-list-direto';
                 let locationDatalistHtml = `<datalist id="${locationDatalistId}">`;
@@ -415,9 +412,9 @@ async function fetchLocations(cnpj) {
                 </div>
                 ${serialDatalistHtml} 
                 ${locationDatalistHtml} `;
-                // --- FIM DA MONTAGEM ---
+                
 
-                // --- ANEXAR VALIDAÇÕES ---
+                
                 const serialInput = detailsFormContainer.querySelector('#numero_serial');
                 const localInput = detailsFormContainer.querySelector('#local');
                 const validadeInput = detailsFormContainer.querySelector('#validade');
@@ -452,9 +449,9 @@ if (btnAdicionarInsumoDireto) {
     }
     if (detailsForm) {
         detailsForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); // ESSENCIAL: Impede o reload da página
+            event.preventDefault(); 
 
-            // --- VALIDAR ANTES DE ENVIAR ---
+            
             let isValid = true;
             const serialInput = detailsForm.querySelector('#numero_serial');
             const localInput = detailsForm.querySelector('#local');
@@ -467,33 +464,33 @@ if (btnAdicionarInsumoDireto) {
             isValid = validateDate(validadeInput) && isValid;
 
             if (!isValid) {
-                return; // Impede o envio do formulário
+                return; 
             }
-            // --- FIM DA VALIDAÇÃO ---
+            
             
             const formData = new FormData(detailsForm);
             const data = Object.fromEntries(formData.entries());
 
-            // --- Validações (Exemplo: data) ---
+            
             if (data.validade) {
                 const ano = data.validade.split('-')[0];
                 if (ano.length !== 4) {
                     Notifier.showError('Ano da validade inválido. Use 4 dígitos.');
-                    return; // Impede o envio
+                    return; 
                 }
-                // A validação de data passada já foi feita pelo validateDate()
+                
             }
-            // --- Fim Validações ---
+            
 
 
-            // --- Envio para a API ---
+            
             if (!filialCnpj) {
                  Notifier.showError("Erro crítico: CNPJ da filial não encontrado.");
                  return;
             }
 
-            const saveButton = detailsForm.querySelector('.btn-save'); // Pega o botão de salvar
-            if(saveButton) saveButton.disabled = true; // Desabilita durante o envio
+            const saveButton = detailsForm.querySelector('.btn-save'); 
+            if(saveButton) saveButton.disabled = true; 
 
             try {
                 const response = await fetch(`/api/insumos/filial/${filialCnpj}/direto`, {
@@ -502,18 +499,18 @@ if (btnAdicionarInsumoDireto) {
                         'Content-Type': 'application/json', 
                         'Authorization': `Bearer ${token}` 
                     },
-                    body: JSON.stringify(data) // Envia os dados do formulário
+                    body: JSON.stringify(data) 
                 });
 
             const result = await response.json();
                 if (!response.ok) throw new Error(result.message || `Erro ${response.status}`);
                 
-                Notifier.showSuccess(result.message || 'Insumo adicionado/atualizado com sucesso!'); // <--- SUBSTITUÍDO
+                Notifier.showSuccess(result.message || 'Insumo adicionado/atualizado com sucesso!'); 
                 closeModal();           
                 carregarInsumosGerais(); 
 
             } catch (error) {
-                Notifier.showError(`Erro ao adicionar insumo: ${error.message}`); // <--- SUBSTITUÍDO
+                Notifier.showError(`Erro ao adicionar insumo: ${error.message}`); 
             } finally {
                  if(saveButton) saveButton.disabled = false; 
             }
@@ -533,7 +530,7 @@ if (btnAdicionarInsumoDireto) {
     inicializarPagina();
 
     window.addEventListener('pageshow', function(event) {
-        // 'persisted' é true se a página foi carregada do bfcache
+        
         if (event.persisted) {
             console.log('Página carregada do cache. Recarregando dados...');
             inicializarPagina();
@@ -541,71 +538,24 @@ if (btnAdicionarInsumoDireto) {
     });
 });
 
-// A sua função atual (com o bug) se parece com isto:
+
 function parseDateAsLocal(dateString) {
     if (!dateString) return null;
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // O BD envia '2029-12-12T03:00:00.000Z'
-    // Nós pegamos apenas a parte da data (antes do 'T')
+    
+    
+    
     const dateOnly = dateString.split('T')[0];
-    // --- FIM DA CORREÇÃO ---
+    
 
-    // Agora o teste regex original funciona com a data limpa
+    
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) { 
-        // O console.error que você está vendo
+        
         console.error("Formato de data inválido recebido:", dateString); 
         return null;
     }
     
     const [year, month, day] = dateOnly.split('-').map(Number);
-    // O mês em JavaScript é 0-indexado
+    
     return new Date(year, month - 1, day); 
-}
-
-
-// --- FUNÇÕES AUXILIARES DE VALIDAÇÃO ---
-function displayError(inputElement, message) {
-    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.className = 'field-error-message';
-        errorDiv.style.color = '#d32f2f';
-        errorDiv.style.fontSize = '0.9em';
-        errorDiv.style.marginTop = '5px';
-        inputElement.parentNode.insertBefore(errorDiv, inputElement.nextSibling);
-    }
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-}
-
-function clearError(inputElement) {
-    let errorDiv = inputElement.parentElement.querySelector('.field-error-message');
-    if (errorDiv) {
-        errorDiv.textContent = '';
-        errorDiv.style.display = 'none';
-    }
-}
-
-function validateRequired(inputElement, fieldName) {
-    if (!inputElement || inputElement.value.trim() === '') {
-        displayError(inputElement, `${fieldName} é obrigatório.`);
-        return false;
-    }
-    clearError(inputElement);
-    return true;
-}
-
-function validateDate(inputElement) {
-    if (!inputElement || inputElement.value.trim() === '') {
-        displayError(inputElement, 'Data de validade é obrigatória.');
-        return false;
-    }
-    const hoje = new Date().toISOString().split('T')[0];
-    if (inputElement.value < hoje) {
-        displayError(inputElement, 'A data não pode ser anterior a hoje.');
-        return false;
-    }
-    clearError(inputElement);
-    return true;
 }
